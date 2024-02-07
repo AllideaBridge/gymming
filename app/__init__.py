@@ -25,7 +25,7 @@ def create_app(env):
     api = Api(app, version='1.0', title='Gymming', description='Gymming api', doc="/api-docs")
     api.add_namespace(ns_user)
     api.add_namespace(ns_trainer)
-    api.add_namespace(ns_schedul    e)
+    api.add_namespace(ns_schedule)
     api.add_namespace(ns_trainer_schedule)
 
     if env == "test":
