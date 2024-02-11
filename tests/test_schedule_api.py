@@ -67,10 +67,10 @@ class ScheduleTestCase(unittest.TestCase):
                           '2024-01-27', '2024-01-28', '2024-01-29', '2024-01-30', '2024-01-31'])
         print(response.get_json())
 
-    # def test_user_day_schedule_list(self):
-    #     response = self.client.get('/schedules/1/2024/1/15')
-    #     print(response.json)
-    #     self.assertEqual(response.status_code, 200)
+    def test_유저_하루_스케쥴_조회(self):
+        response = self.client.get('/schedules/1/2024/1/21')
+        self.assertEqual(len(response.get_json()), 6)
+        self.assertEqual(response.status_code, 200)
 
 
 if __name__ == '__main__':
