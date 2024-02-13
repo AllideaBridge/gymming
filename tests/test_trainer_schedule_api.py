@@ -21,7 +21,8 @@ class TrainerScheduleTestCase(unittest.TestCase):
 
         # Trainer 레코드 추가
         trainer = Trainer(trainer_name='Test Trainer', trainer_email='test@example.com',
-                          trainer_gender='M', trainer_phone_number='010-0000-0000', lesson_minutes=60)
+                          trainer_gender='M', trainer_phone_number='010-0000-0000', lesson_minutes=60,
+                          lesson_change_range=3)
         db.session.add(trainer)
         db.session.commit()
 
@@ -74,6 +75,7 @@ class TrainerScheduleTestCase(unittest.TestCase):
         response = self.client.get(f'/trainer_schedule/{trainer_id}/2024/01/10')
         self.assertEqual(response.get_json(),
                          {'availability_end_time': '22:30', 'availability_start_time': '14:30', 'lesson_minutes': 60,
+                          'lesson_change_range': 3,
                           'schedules': [{'schedule_id': 3, 'schedule_start_time': 'Wed, 10 Jan 2024 11:30:00 GMT'},
                                         {'schedule_id': 5, 'schedule_start_time': 'Wed, 10 Jan 2024 12:30:00 GMT'},
                                         {'schedule_id': 7, 'schedule_start_time': 'Wed, 10 Jan 2024 13:30:00 GMT'}]})

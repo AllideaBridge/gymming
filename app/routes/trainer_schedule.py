@@ -70,6 +70,7 @@ class TrainerDaySchedule(Resource):
 
         trainer_details = db.session.query(
             Trainer.lesson_minutes,
+            Trainer.lesson_change_range,
             TrainerAvailability.start_time,
             TrainerAvailability.end_time,
         ) \
@@ -87,6 +88,7 @@ class TrainerDaySchedule(Resource):
 
             result = {
                 'lesson_minutes': trainer_details.lesson_minutes,
+                'lesson_change_range': trainer_details.lesson_change_range,
                 'availability_start_time': formatted_start_time,
                 'availability_end_time': formatted_end_time
             }

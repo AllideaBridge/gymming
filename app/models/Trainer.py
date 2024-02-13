@@ -16,4 +16,5 @@ class Trainer(db.Model):
     lesson_name = db.Column(db.String(100), nullable=True)
     lesson_price = db.Column(db.Integer, nullable=True)
     lesson_minutes = db.Column(db.Integer, nullable=False)
+    lesson_change_range = db.Column(db.Integer, nullable=False)
     trainer_delete_flag = db.Column(db.Boolean, default=False)
