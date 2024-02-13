@@ -16,7 +16,8 @@ user_schedule_model = ns_schedule.model('UserSchedule', {
     'lesson_name': fields.String,
     'center_name': fields.String,
     'center_location': fields.String,
-    'schedule_start_time': fields.DateTime
+    'schedule_start_time': fields.DateTime,
+    'schedule_id': fields.Integer
 })
 
 
@@ -43,7 +44,8 @@ class UserDayScheduleList(Resource):
             coalesce(Trainer.lesson_name, '').label('lesson_name'),
             coalesce(Center.center_name, '').label('center_name'),
             coalesce(Center.center_location, '').label('center_location'),
-            Schedule.schedule_start_time
+            Schedule.schedule_start_time,
+            Schedule.schedule_id
         ).join(TrainingUser, TrainingUser.training_user_id == Schedule.training_user_id) \
             .join(Trainer, TrainingUser.trainer_id == Trainer.trainer_id) \
             .outerjoin(Center, Trainer.center_id == Center.center_id) \

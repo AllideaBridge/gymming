@@ -40,7 +40,8 @@ class ScheduleTestCase(unittest.TestCase):
                 trainer_email='test@example.com',
                 trainer_gender='M',
                 trainer_phone_number='010-0000-0000',
-                lesson_minutes=60
+                lesson_minutes=60,
+                lesson_change_range=3
             )
             db.session.add(trainer)
             db.session.commit()
@@ -70,6 +71,7 @@ class ScheduleTestCase(unittest.TestCase):
     def test_유저_하루_스케쥴_조회(self):
         response = self.client.get('/schedules/1/2024/1/21')
         self.assertEqual(len(response.get_json()), 6)
+        print(response.get_json())
         self.assertEqual(response.status_code, 200)
 
 
