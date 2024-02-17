@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from random import randint
 
 from app import create_app, Users, Schedule, Trainer, Center, TrainingUser
+from app.common.Constants import SCHEDULE_CANCELLED, SCHEDULED
 from database import db
 
 
@@ -74,6 +75,29 @@ class ScheduleTestCase(unittest.TestCase):
         print(response.get_json())
         self.assertEqual(response.status_code, 200)
 
+    def test_유저_스케쥴_변경(self):
+        schedule_id = 1
+        requested_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        body = {
+            'requested_date': requested_date
+        }
+        response = self.client.post(f'/schedules/{schedule_id}/change', json=body)
+        self.assertEqual(response.status_code, 200)
+
+        old_schedule = Schedule.query.filter_by(schedule_id=schedule_id).first()
+        self.assertEqual(old_schedule.schedule_status, SCHEDULE_CANCELLED)
+
+        new_schedule = Schedule.query.filter_by(schedule_start_time=requested_date).first()
+        self.assertEqual(new_schedule.schedule_status, SCHEDULED)
+
+    def test_유저_없는_스케쥴_변경(self):
+        schedule_id = 0
+        requested_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        body = {
+            'requested_date': requested_date
+        }
+        response = self.client.post(f'/schedules/{schedule_id}/change', json=body)
+        self.assertEqual(response.status_code, 404)
 
 if __name__ == '__main__':
     unittest.main()

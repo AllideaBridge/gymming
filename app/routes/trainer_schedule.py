@@ -114,3 +114,5 @@ class TrainerDaySchedule(Resource):
         } for schedule in schedules]
 
         return jsonify(result)
+
+# todo: 스케쥴 조회시 스케쥴 상태 조건 추가
