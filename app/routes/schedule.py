@@ -84,12 +84,13 @@ class ScheduleResource(Resource):
                 # 스케줄 상태 업데이트
                 schedule = Schedule.query.filter_by(schedule_id=schedule_id).first()
                 if not schedule:
-                    return jsonify({'error': 'Schedule not found'}), 404
+                    return {'error': 'Schedule not found'}, 404
 
                 schedule.schedule_status = SCHEDULE_CANCELLED
                 db.session.add(schedule)
 
                 # 새 스케줄 생성
+                # todo : 새 스케쥴 생성시 시간 중복 여부 체크
                 new_schedule = Schedule(
                     training_user_id=schedule.training_user_id,
                     schedule_start_time=requested_date,
@@ -104,4 +105,4 @@ class ScheduleResource(Resource):
         except Exception as e:
             db.session.rollback()
             logging.log(logging.ERROR, str(e))
-            return jsonify({'error': str(e)}), 500
+            return {'error': str(e)}, 500
