@@ -34,7 +34,6 @@ class ScheduleTestCase(unittest.TestCase):
         db.session.commit()
 
         # 트레이너 데이터 생성
-        trainers = []
         for i in range(1, 10):
             trainer = Trainer(
                 trainer_name=f'Test Trainer{i}',
@@ -98,6 +97,3 @@ class ScheduleTestCase(unittest.TestCase):
         }
         response = self.client.post(f'/schedules/{schedule_id}/change', json=body)
         self.assertEqual(response.status_code, 404)
-
-if __name__ == '__main__':
-    unittest.main()

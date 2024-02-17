@@ -57,7 +57,7 @@ class TrainerScheduleTestCase(unittest.TestCase):
         db.session.remove()
 
     def test_트레이너_한달_스케쥴_정상(self):
-        response = self.client.get('/trainer_schedule/1/2024/1')  # 예시 URL
+        response = self.client.get('/schedules/trainer/1/2024/1')  # 예시 URL
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_json(),
                          ['2024-01-02', '2024-01-03', '2024-01-04', '2024-01-11', '2024-01-16', '2024-01-17',
@@ -66,13 +66,13 @@ class TrainerScheduleTestCase(unittest.TestCase):
 
     def test_트레이너_근무시간_없는_경우(self):
         no_trainer_availability_trainer_id = 2
-        response = self.client.get(f'/trainer_schedule/{no_trainer_availability_trainer_id}/2024/1')
+        response = self.client.get(f'/schedules/trainer/{no_trainer_availability_trainer_id}/2024/1')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.get_json(), [])
 
     def test_트레이너_하루_스케쥴(self):
         trainer_id = 1
-        response = self.client.get(f'/trainer_schedule/{trainer_id}/2024/01/10')
+        response = self.client.get(f'/schedules/trainer/{trainer_id}/2024/01/10')
         self.assertEqual(response.get_json(),
                          {'availability_end_time': '22:30', 'availability_start_time': '14:30', 'lesson_minutes': 60,
                           'lesson_change_range': 3,
