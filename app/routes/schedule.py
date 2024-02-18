@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime,date
+from datetime import datetime, date
 from calendar import monthrange
 
 from flask import jsonify
@@ -69,7 +69,7 @@ class UserDayScheduleList(Resource):
 
 # todo: 스케쥴 변경 시 새로운 스케쥴이 중복되지 않는지 어떻게 확인 후 처리할까? -> 스케쥴을 먼저 추가한 후 삭제 진행.
 @ns_schedule.route('/<int:schedule_id>/change')
-class ScheduleResource(Resource):
+class ScheduleChangeResource(Resource):
     def post(self, schedule_id):
         body = ns_schedule.payload
         requested_date = body['requested_date']
@@ -108,6 +108,19 @@ class ScheduleResource(Resource):
             db.session.rollback()
             logging.log(logging.ERROR, str(e))
             return {'error': str(e)}, 500
+
+
+@ns_schedule.route('/<int:schedule_id>/cancel')
+class ScheduleCancelResource(Resource):
+    def post(self, schedule_id):
+        schedule = Schedule.query.filter_by(schedule_id=schedule_id).first()
+        if not schedule:
+            return {'error': 'Schedule not found'}, 404
+
+        schedule.schedule_status = SCHEDULE_CANCELLED
+        db.session.add(schedule)
+        db.session.commit()
+        return {'message': 'Schedule cancel successfully'}, 200
 
 
 # 입력 받은 year, month중 트레이너의 근무 스케쥴이 꽉 차지 않은 날짜 배열을 리턴한다.
