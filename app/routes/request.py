@@ -1,6 +1,10 @@
 from flask_restx import Namespace, fields, Resource
+from sqlalchemy import and_
 
+from app.models.Users import Users
 from app.models.Request import Request
+from app.models.TrainingUser import TrainingUser
+from app.models.Schedule import Schedule
 from database import db
 
 ns_request = Namespace('request', description='Request related operations')
@@ -14,7 +18,7 @@ request_model = ns_request.model('RequestModel', {
 })
 
 
-@ns_request.route('/request')
+@ns_request.route('')
 class RequestResource(Resource):
     @ns_request.expect(request_model)
     def post(self):
@@ -30,3 +34,20 @@ class RequestResource(Resource):
         db.session.commit()  # 변경 사항을 데이터베이스에 커밋
         return {'message': '새로운 요청이 성공적으로 생성되었습니다.'}, 201
 
+
+@ns_request.route('/trainer/<int:trainer_id>')
+class TrainerRequestListResource(Resource):
+    def get(self, trainer_id):
+        results = db.session.query(Users.user_name, Request.request_type, Request.request_time, Request.created_at,
+                                   Schedule.schedule_start_time, Request.request_id) \
+            .join(Schedule, and_(Request.schedule_id == Schedule.schedule_id, Request.request_from == 'user')) \
+            .join(TrainingUser, and_(Schedule.training_user_id == TrainingUser.training_user_id,
+                                     TrainingUser.trainer_id == trainer_id)) \
+            .join(Users, Users.user_id == TrainingUser.user_id) \
+            .all()
+
+        return [{'user_name': r[0], 'request_type': r[1],
+                 'request_time': r[2].strftime('%Y-%m-%d %H:%M:%S') if r[2] else "",
+                 'created_at': r[3].strftime('%Y-%m-%d %H:%M:%S'),
+                 'schedule_start_time': r[4].strftime('%Y-%m-%d %H:%M:%S'),
+                 'request_id': r[5]} for r in results]
