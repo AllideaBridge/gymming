@@ -7,6 +7,7 @@ from database import db
 from app.routes.users import ns_user
 from app.routes.schedule import ns_schedule
 from app.routes.trainer import ns_trainer
+from app.routes.request import ns_request
 from app.models.Center import Center
 from app.models.CenterPrImage import CenterPrImage
 from app.models.TrainingUser import TrainingUser
@@ -25,6 +26,7 @@ def create_app(env):
     api.add_namespace(ns_user)
     api.add_namespace(ns_trainer)
     api.add_namespace(ns_schedule)
+    api.add_namespace(ns_request)
 
     if env == "test":
         logging.basicConfig()
