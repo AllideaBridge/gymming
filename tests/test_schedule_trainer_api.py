@@ -79,3 +79,12 @@ class TrainerScheduleTestCase(unittest.TestCase):
                           'schedules': [{'schedule_id': 3, 'schedule_start_time': 'Wed, 10 Jan 2024 11:30:00 GMT'},
                                         {'schedule_id': 5, 'schedule_start_time': 'Wed, 10 Jan 2024 12:30:00 GMT'},
                                         {'schedule_id': 7, 'schedule_start_time': 'Wed, 10 Jan 2024 13:30:00 GMT'}]})
+
+    def test_트레이너_일주일_스케쥴(self):
+        trainer_id = 1
+        response = self.client.get(f'/schedules/trainer/{trainer_id}/2024/01/7/week')
+        results = response.get_json()
+        for result in results:
+            schedule_start_time = datetime.strptime(result['schedule_start_time'], '%Y-%m-%d %H:%M:%S')
+            self.assertTrue(datetime(2024, 1, 7) <= schedule_start_time <= datetime(2024, 1, 14),
+                            msg="schedule_start_time이 지정된 날짜 범위 내에 없습니다.")

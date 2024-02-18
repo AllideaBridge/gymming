@@ -8,6 +8,7 @@ from sqlalchemy import func
 from sqlalchemy.sql.functions import coalesce
 
 from app.common.Constants import SCHEDULE_CANCELLED, SCHEDULED
+from app.models.Users import Users
 from app.models.Trainer import Trainer
 from app.models.Center import Center
 from app.models.TrainingUser import TrainingUser
@@ -224,4 +225,25 @@ class TrainerDaySchedule(Resource):
 
         return jsonify(result)
 
+
 # todo: 스케쥴 조회시 스케쥴 상태 조건 추가
+
+
+@ns_schedule.route('/trainer/<int:trainer_id>/<int:year>/<int:month>/<int:day>/week')
+class TrainerWeekSchedule(Resource):
+    def get(self, trainer_id, year, month, day):
+        start_date = date(year, month, day)
+        end_date = date(year, month, day + 7)
+
+        results = db.session.query(Users.user_id, Users.user_name, Schedule.schedule_start_time) \
+            .join(TrainingUser,
+                  (TrainingUser.training_user_id == Schedule.training_user_id) \
+                  & (TrainingUser.trainer_id == trainer_id) \
+                  & (db.func.date(Schedule.schedule_start_time) >= start_date) \
+                  & (db.func.date(Schedule.schedule_start_time) <= end_date)) \
+            .join(Trainer, Trainer.trainer_id == TrainingUser.trainer_id) \
+            .join(Users, Users.user_id == TrainingUser.user_id) \
+            .all()
+
+        return [{'user_id': r[0], 'user_name': r[1], 'schedule_start_time': r[2].strftime('%Y-%m-%d %H:%M:%S')}
+                for r in results]
