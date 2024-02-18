@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime,date
+from datetime import datetime, date
 from calendar import monthrange
 
 from flask import jsonify
@@ -8,6 +8,7 @@ from sqlalchemy import func
 from sqlalchemy.sql.functions import coalesce
 
 from app.common.Constants import SCHEDULE_CANCELLED, SCHEDULED
+from app.models.Users import Users
 from app.models.Trainer import Trainer
 from app.models.Center import Center
 from app.models.TrainingUser import TrainingUser
@@ -69,7 +70,7 @@ class UserDayScheduleList(Resource):
 
 # todo: 스케쥴 변경 시 새로운 스케쥴이 중복되지 않는지 어떻게 확인 후 처리할까? -> 스케쥴을 먼저 추가한 후 삭제 진행.
 @ns_schedule.route('/<int:schedule_id>/change')
-class ScheduleResource(Resource):
+class ScheduleChangeResource(Resource):
     def post(self, schedule_id):
         body = ns_schedule.payload
         requested_date = body['requested_date']
@@ -108,6 +109,19 @@ class ScheduleResource(Resource):
             db.session.rollback()
             logging.log(logging.ERROR, str(e))
             return {'error': str(e)}, 500
+
+
+@ns_schedule.route('/<int:schedule_id>/cancel')
+class ScheduleCancelResource(Resource):
+    def post(self, schedule_id):
+        schedule = Schedule.query.filter_by(schedule_id=schedule_id).first()
+        if not schedule:
+            return {'error': 'Schedule not found'}, 404
+
+        schedule.schedule_status = SCHEDULE_CANCELLED
+        db.session.add(schedule)
+        db.session.commit()
+        return {'message': 'Schedule cancel successfully'}, 200
 
 
 # 입력 받은 year, month중 트레이너의 근무 스케쥴이 꽉 차지 않은 날짜 배열을 리턴한다.
@@ -211,4 +225,25 @@ class TrainerDaySchedule(Resource):
 
         return jsonify(result)
 
+
 # todo: 스케쥴 조회시 스케쥴 상태 조건 추가
+
+
+@ns_schedule.route('/trainer/<int:trainer_id>/<int:year>/<int:month>/<int:day>/week')
+class TrainerWeekSchedule(Resource):
+    def get(self, trainer_id, year, month, day):
+        start_date = date(year, month, day)
+        end_date = date(year, month, day + 7)
+
+        results = db.session.query(Users.user_id, Users.user_name, Schedule.schedule_start_time) \
+            .join(TrainingUser,
+                  (TrainingUser.training_user_id == Schedule.training_user_id) \
+                  & (TrainingUser.trainer_id == trainer_id) \
+                  & (db.func.date(Schedule.schedule_start_time) >= start_date) \
+                  & (db.func.date(Schedule.schedule_start_time) <= end_date)) \
+            .join(Trainer, Trainer.trainer_id == TrainingUser.trainer_id) \
+            .join(Users, Users.user_id == TrainingUser.user_id) \
+            .all()
+
+        return [{'user_id': r[0], 'user_name': r[1], 'schedule_start_time': r[2].strftime('%Y-%m-%d %H:%M:%S')}
+                for r in results]

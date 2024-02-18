@@ -97,3 +97,11 @@ class ScheduleTestCase(unittest.TestCase):
         }
         response = self.client.post(f'/schedules/{schedule_id}/change', json=body)
         self.assertEqual(response.status_code, 404)
+
+    def test_유저_스케쥴_취소(self):
+        schedule_id = 2
+        response = self.client.post(f'/schedules/{schedule_id}/cancel')
+        self.assertEqual(response.status_code, 200)
+
+        old_schedule = Schedule.query.filter_by(schedule_id=schedule_id).first()
+        self.assertEqual(old_schedule.schedule_status, SCHEDULE_CANCELLED)
