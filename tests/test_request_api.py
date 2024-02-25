@@ -2,8 +2,11 @@ import unittest
 from datetime import datetime, timedelta
 
 from app import create_app, Trainer, TrainingUser, Users, Schedule, Request
-from app.common.Constants import REQUEST_TYPE_CANCEL, REQUEST_TYPE_MODIFY
+from app.common.Constants import REQUEST_TYPE_CANCEL, REQUEST_TYPE_MODIFY, REQUEST_STATUS_WAITING, \
+    REQUEST_STATUS_REJECTED, REQUEST_STATUS_APPROVED, SCHEDULE_CANCELLED, SCHEDULE_MODIFIED, SCHEDULE_SCHEDULED
 from database import db
+
+URL_REQUEST_APPROVED = '/request/approve'
 
 
 class TrainerScheduleTestCase(unittest.TestCase):
@@ -43,10 +46,14 @@ class TrainerScheduleTestCase(unittest.TestCase):
                 db.session.add(schedule)
                 db.session.commit()
                 request_cancel = Request(schedule_id=schedule.schedule_id, request_from='user',
-                                         request_type=REQUEST_TYPE_CANCEL)
+                                         request_type=REQUEST_TYPE_CANCEL,
+                                         request_description=f'request cancel description {j}',
+                                         request_status=REQUEST_STATUS_WAITING)
                 db.session.add(request_cancel)
                 request_modify = Request(schedule_id=schedule.schedule_id, request_from='user',
-                                         request_type=REQUEST_TYPE_MODIFY, request_time=datetime.now())
+                                         request_type=REQUEST_TYPE_MODIFY, request_time=datetime.now(),
+                                         request_description=f'request modify description {j}',
+                                         request_status=REQUEST_STATUS_WAITING)
                 db.session.add(request_modify)
                 db.session.commit()
 
@@ -59,11 +66,113 @@ class TrainerScheduleTestCase(unittest.TestCase):
         response = self.client.get(f'/request/trainer/{trainer_id}')
         self.assertEqual(response.status_code, 200)
         data = response.get_json()
+        print(data)
+
         if data:
             for req in data:
-                r = db.session.query(TrainingUser.trainer_id) \
+                r = db.session.query(TrainingUser.trainer_id, Request.request_status) \
                     .join(Schedule, Schedule.training_user_id == TrainingUser.training_user_id) \
                     .join(Request, Request.schedule_id == Schedule.schedule_id) \
                     .filter(Request.request_id == req['request_id']) \
                     .first()
                 self.assertEqual(r[0], trainer_id)
+                self.assertEqual(r[1], REQUEST_STATUS_WAITING)
+
+    def test_요청_상세조회(self):
+        request_id = 1
+        response = self.client.get(f'/request/{request_id}/details')
+        data = response.get_json()
+        self.assertEqual(data['request_id'], request_id)
+        self.assertIn('request_description', data, msg='request_description is missing in response')
+
+    def test_없는_요청_상세조회(self):
+        request_id = 0
+        response = self.client.get(f'/request/{request_id}/details')
+        self.assertEqual(response.status_code, 404)
+
+    def test_요청_거절(self):
+        request_id = 1
+        self.client.patch(f'/request/{request_id}/reject')
+        data = Request.query.filter_by(request_id=request_id).first()
+        self.assertEqual(data.request_id, request_id)
+        self.assertEqual(data.request_status, REQUEST_STATUS_REJECTED)
+
+    def test_유효하지_않은_request_type으로_승인_요청한_경우(self):
+        body = {
+            'request_id': 1,
+            'request_type': "invalid_request_type",
+            'request_time': datetime.now()
+        }
+        response = self.client.post('/request/approve', json=body)
+        self.assertEqual(response.status_code, 400)
+
+    def test_취소_요청이_승인된_경우(self):
+        request = Request.query.filter_by(request_type=REQUEST_TYPE_CANCEL,
+                                          request_status=REQUEST_STATUS_WAITING).first()
+        request_id = request.request_id
+        schedule_id = request.schedule_id
+        body = {
+            'request_id': request_id,
+            'request_type': REQUEST_TYPE_CANCEL
+        }
+        response = self.client.post(URL_REQUEST_APPROVED, json=body)
+        request = Request.query.filter_by(request_id=request_id).first()
+        schedule = Schedule.query.filter_by(schedule_id=schedule_id).first()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(request.request_status, REQUEST_STATUS_APPROVED)
+        self.assertEqual(schedule.schedule_status, SCHEDULE_CANCELLED)
+
+    def test_수정_요청이_승인된_경우(self):
+        request = Request.query.filter_by(request_type=REQUEST_TYPE_MODIFY,
+                                          request_status=REQUEST_STATUS_WAITING).first()
+        request_id = request.request_id
+        schedule_id = request.schedule_id
+        body = {
+            'request_id': request_id,
+            'request_type': REQUEST_TYPE_MODIFY,
+            'request_time': str(request.request_time)
+        }
+        response = self.client.post(URL_REQUEST_APPROVED, json=body)
+        request = Request.query.filter_by(request_id=request_id).first()
+        schedule = Schedule.query.filter_by(schedule_id=schedule_id).first()
+        new_schedule = Schedule.query.filter_by(training_user_id=schedule.training_user_id,
+                                                schedule_start_time=request.request_time).first()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(request.request_status, REQUEST_STATUS_APPROVED)
+        self.assertEqual(schedule.schedule_status, SCHEDULE_MODIFIED)
+        self.assertIsNotNone(new_schedule)
+
+    def test_요청_상태가_WAITING이_아닌_경우(self):
+        request = Request.query.filter_by(request_type=REQUEST_TYPE_MODIFY,
+                                          request_status=REQUEST_STATUS_APPROVED).first()
+        request_id = request.request_id
+        body = {
+            'request_id': request_id,
+            'request_type': REQUEST_TYPE_MODIFY,
+            'request_time': str(request.request_time)
+        }
+        response = self.client.post(URL_REQUEST_APPROVED, json=body)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.get_json()['message'], 'Invalid Request Status')
+
+    def test_요청_시간에_이미_스케쥴이_있는_경우(self):
+        request = Request.query.filter_by(request_type=REQUEST_TYPE_MODIFY,
+                                          request_status=REQUEST_STATUS_WAITING).first()
+        request_id = request.request_id
+        schedule_id = request.schedule_id
+        schedule = Schedule.query.filter_by(schedule_id=schedule_id).first()
+        already_exist_schedule = Schedule(training_user_id=schedule.training_user_id,
+                                          schedule_start_time=str(request.request_time),
+                                          schedule_status=SCHEDULE_SCHEDULED)
+        db.session.add(already_exist_schedule)
+        db.session.commit()
+
+        body = {
+            'request_id': request_id,
+            'request_type': REQUEST_TYPE_MODIFY,
+            'request_time': str(request.request_time)
+        }
+        response = self.client.post(URL_REQUEST_APPROVED, json=body)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.get_json()['message'],
+                         'New schedule conflicts with existing schedules of the trainer')
