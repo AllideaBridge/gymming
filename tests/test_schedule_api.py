@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from random import randint
 
 from app import create_app, Users, Schedule, Trainer, Center, TrainingUser
-from app.common.Constants import SCHEDULE_CANCELLED, SCHEDULED
+from app.common.Constants import SCHEDULE_CANCELLED, SCHEDULE_SCHEDULED
 from database import db
 
 
@@ -87,7 +87,7 @@ class ScheduleTestCase(unittest.TestCase):
         self.assertEqual(old_schedule.schedule_status, SCHEDULE_CANCELLED)
 
         new_schedule = Schedule.query.filter_by(schedule_start_time=requested_date).first()
-        self.assertEqual(new_schedule.schedule_status, SCHEDULED)
+        self.assertEqual(new_schedule.schedule_status, SCHEDULE_SCHEDULED)
 
     def test_유저_없는_스케쥴_변경(self):
         schedule_id = 0

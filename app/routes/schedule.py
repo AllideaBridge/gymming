@@ -7,7 +7,7 @@ from flask_restx import Namespace, Resource, fields
 from sqlalchemy import func
 from sqlalchemy.sql.functions import coalesce
 
-from app.common.Constants import SCHEDULE_CANCELLED, SCHEDULED
+from app.common.Constants import SCHEDULE_CANCELLED, SCHEDULE_SCHEDULED
 from app.models.Users import Users
 from app.models.Trainer import Trainer
 from app.models.Center import Center
@@ -97,7 +97,7 @@ class ScheduleChangeResource(Resource):
                 new_schedule = Schedule(
                     training_user_id=schedule.training_user_id,
                     schedule_start_time=requested_date,
-                    schedule_status=SCHEDULED  # 새 스케줄의 상태를 'scheduled'로 설정
+                    schedule_status=SCHEDULE_SCHEDULED  # 새 스케줄의 상태를 'scheduled'로 설정
                 )
                 db.session.add(new_schedule)
 
