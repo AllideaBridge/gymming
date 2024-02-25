@@ -12,3 +12,4 @@ class Request(db.Model):
     request_status = db.Column(db.String(20), nullable=True)
     request_time = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    request_reject_reason = db.Column(db.String(255), nullable=True)
