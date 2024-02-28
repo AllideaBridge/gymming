@@ -14,6 +14,7 @@ from database import db
 
 ns_request = Namespace('request', description='Request related operations')
 
+# 요청 생성 모델 정의
 request_model = ns_request.model('RequestModel', {
     'schedule_id': fields.Integer(required=True, description='스케줄 ID'),
     'request_from': fields.String(required=True, description='요청자'),
@@ -22,10 +23,16 @@ request_model = ns_request.model('RequestModel', {
     'request_time': fields.DateTime(required=True, description='요청 시간')
 })
 
+# 요청 승인 모델 정의
 request_approve_model = ns_request.model("RequestApproveModel", {
     'request_id': fields.Integer(required=True, description='요청 ID'),
     'request_type': fields.String(required=True, description='요청 타입'),
     'request_time': fields.String(description='요청 시간')
+})
+
+# 요청 거절 모델 정의
+request_reject_model = ns_request.model('RequestRejectModel', {
+    'request_reject_reason': fields.String(required=True, description='요청 거절 사유')
 })
 
 
@@ -78,18 +85,22 @@ class RequestResource(Resource):
         return {"request_id": request[0], "request_description": request[1]}
 
 
-@ns_request.route('/<int:request_id>/reject')
+@ns_request.route('/reject/<int:request_id>')
 class RequestRejectResource(Resource):
-    def patch(self, request_id):
-        # todo : 거절 사유 입력
+    @ns_request.expect(request_reject_model)
+    def put(self, request_id):
         request_record = Request.query.filter_by(request_id=request_id).first()
+        if not request_record:
+            return {'message': '요청을 찾을 수 없습니다.'}, 404
 
-        if request_record:
-            request_record.request_status = REQUEST_STATUS_REJECTED
-            db.session.commit()
-            return {'request_id': request_record.request_id, 'request_status': REQUEST_STATUS_REJECTED}, 200
-        else:
-            return {'message': 'Request not found'}, 404
+        data = ns_request.payload  # 요청 본문에서 데이터 추출
+        request_reject_reason = data.get('request_reject_reason')  # 거절 사유 추출
+
+        request_record.request_status = REQUEST_STATUS_REJECTED  # 요청 상태를 '거절됨'으로 변경
+        request_record.request_reject_reason = request_reject_reason  # 거절 사유를 데이터베이스에 업데이트
+
+        db.session.commit()  # 변경 사항을 데이터베이스에 커밋
+        return {'message': '요청이 성공적으로 거절되었습니다.', 'request_reject_reason': request_reject_reason}, 200
 
 
 @ns_request.route('/approve')
