@@ -1,4 +1,4 @@
-from flask_restx import Namespace, fields, Resource
+from flask_restx import Namespace, fields, Resource, reqparse
 from sqlalchemy import and_, func, literal_column
 from datetime import datetime
 
@@ -53,13 +53,32 @@ class RequestResource(Resource):
         return {'message': '새로운 요청이 성공적으로 생성되었습니다.'}, 201
 
 
-@ns_request.route('/trainer/<int:trainer_id>')
+parser = reqparse.RequestParser()
+parser.add_argument('trainer_id', type=int, required=True, help='트레이너 ID')
+parser.add_argument('request_status', required=True, action='split',
+                    help='요청 상태 (REQUEST_STATUS_WAITING, REQUEST_STATUS_APPROVED, REQUEST_STATUS_REJECTED)')
+
+
+@ns_request.route('/trainer')
 class TrainerRequestListResource(Resource):
-    def get(self, trainer_id):
+    def get(self):
+        args = parser.parse_args()
+        trainer_id = args['trainer_id']  # 쿼리 파라미터에서 트레이너 ID 추출
+        request_status = args['request_status']  # 쿼리 파라미터에서 요청 상태 추출
+
+        # 요청 상태에 따른 조건 분기
+        if REQUEST_STATUS_WAITING in request_status and len(request_status) == 1:
+            status_condition = Request.request_status == REQUEST_STATUS_WAITING
+        elif REQUEST_STATUS_APPROVED in request_status and REQUEST_STATUS_REJECTED in request_status and len(
+                request_status) == 2:
+            status_condition = Request.request_status.in_([REQUEST_STATUS_APPROVED, REQUEST_STATUS_REJECTED])
+        else:
+            return {'message': 'Invalid Request Status'}, 400
+
         results = db.session.query(Users.user_name, Request.request_type, Request.request_time, Request.created_at,
-                                   Schedule.schedule_start_time, Request.request_id) \
+                                   Schedule.schedule_start_time, Request.request_id, Request.request_status) \
             .join(Schedule, and_(Request.schedule_id == Schedule.schedule_id, Request.request_from == REQUEST_FROM_USER,
-                                 Request.request_status == REQUEST_STATUS_WAITING)) \
+                                 status_condition)) \
             .join(TrainingUser, and_(Schedule.training_user_id == TrainingUser.training_user_id,
                                      TrainingUser.trainer_id == trainer_id)) \
             .join(Users, Users.user_id == TrainingUser.user_id) \
@@ -69,7 +88,7 @@ class TrainerRequestListResource(Resource):
                  'request_time': r[2].strftime('%Y-%m-%d %H:%M:%S') if r[2] else "",
                  'created_at': r[3].strftime('%Y-%m-%d %H:%M:%S'),
                  'schedule_start_time': r[4].strftime('%Y-%m-%d %H:%M:%S'),
-                 'request_id': r[5]} for r in results]
+                 'request_id': r[5], 'request_status': r[6]} for r in results]
 
 
 @ns_request.route('/<int:request_id>/details')
@@ -85,16 +104,17 @@ class RequestResource(Resource):
         return {"request_id": request[0], "request_description": request[1]}
 
 
-@ns_request.route('/reject/<int:request_id>')
+@ns_request.route('/reject')
 class RequestRejectResource(Resource):
     @ns_request.expect(request_reject_model)
-    def put(self, request_id):
+    def put(self):
+        data = ns_request.payload  # 요청 본문에서 데이터 추출
+        request_id = data.get('request_id')
+        request_reject_reason = data.get('request_reject_reason')  # 거절 사유 추출
+
         request_record = Request.query.filter_by(request_id=request_id).first()
         if not request_record:
             return {'message': '요청을 찾을 수 없습니다.'}, 404
-
-        data = ns_request.payload  # 요청 본문에서 데이터 추출
-        request_reject_reason = data.get('request_reject_reason')  # 거절 사유 추출
 
         request_record.request_status = REQUEST_STATUS_REJECTED  # 요청 상태를 '거절됨'으로 변경
         request_record.request_reject_reason = request_reject_reason  # 거절 사유를 데이터베이스에 업데이트

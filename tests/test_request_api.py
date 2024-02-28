@@ -61,22 +61,44 @@ class TrainerScheduleTestCase(unittest.TestCase):
     def tearDownClass(cls):
         db.session.remove()
 
-    def test_트레이너_요청_리스트_조회(self):
+    def test_트레이너_요청_대기_리스트_조회(self):
         trainer_id = 1
-        response = self.client.get(f'/request/trainer/{trainer_id}')
+        response = self.client.get(f'/request/trainer?trainer_id={trainer_id}&request_status={REQUEST_STATUS_WAITING}')
         self.assertEqual(response.status_code, 200)
         data = response.get_json()
-        print(data)
 
         if data:
             for req in data:
                 r = db.session.query(TrainingUser.trainer_id, Request.request_status) \
-                    .join(Schedule, Schedule.training_user_id == TrainingUser.training_user_id) \
-                    .join(Request, Request.schedule_id == Schedule.schedule_id) \
+                    .join(Schedule, Request.schedule_id == Schedule.schedule_id) \
+                    .join(TrainingUser, Schedule.training_user_id == TrainingUser.training_user_id) \
                     .filter(Request.request_id == req['request_id']) \
                     .first()
                 self.assertEqual(r[0], trainer_id)
                 self.assertEqual(r[1], REQUEST_STATUS_WAITING)
+
+    def test_트레이너_요청_완료_리스트_조회(self):
+        trainer_id = 1
+        response = self.client.get(
+            f'/request/trainer?trainer_id={trainer_id}&request_status={REQUEST_STATUS_APPROVED},{REQUEST_STATUS_REJECTED}')
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+
+        if data:
+            for req in data:
+                r = db.session.query(TrainingUser.trainer_id, Request.request_status) \
+                    .join(Schedule, Request.schedule_id == Schedule.schedule_id) \
+                    .join(TrainingUser, Schedule.training_user_id == TrainingUser.training_user_id) \
+                    .filter(Request.request_id == req['request_id']) \
+                    .first()
+                self.assertEqual(r[0], trainer_id)
+                self.assertIn(r[1], [REQUEST_STATUS_APPROVED, REQUEST_STATUS_REJECTED])
+
+    def test_유효하지_않은_파라미터로_트레이너_요청_리스트_조회(self):
+        trainer_id = 1
+        response = self.client.get(
+            f'/request/trainer?trainer_id={trainer_id}&request_status={REQUEST_STATUS_WAITING},{REQUEST_STATUS_REJECTED}')
+        self.assertEqual(response.status_code, 400)
 
     def test_요청_상세조회(self):
         request_id = 1
@@ -92,10 +114,17 @@ class TrainerScheduleTestCase(unittest.TestCase):
 
     def test_요청_거절(self):
         request_id = 1
-        self.client.patch(f'/request/{request_id}/reject')
+        request_reject_reason = "reject reason"
+        body = {
+            "request_id": request_id,
+            "request_reject_reason": request_reject_reason
+        }
+        self.client.put('/request/reject', json=body)
+
         data = Request.query.filter_by(request_id=request_id).first()
-        self.assertEqual(data.request_id, request_id)
-        self.assertEqual(data.request_status, REQUEST_STATUS_REJECTED)
+        self.assertEqual(request_id, data.request_id)
+        self.assertEqual(REQUEST_STATUS_REJECTED, data.request_status)
+        self.assertEqual(request_reject_reason, data.request_reject_reason)
 
     def test_유효하지_않은_request_type으로_승인_요청한_경우(self):
         body = {
