@@ -4,19 +4,19 @@ from flask import Flask
 from flask_restx import Api
 
 from database import db
-from app.routes.users import ns_user
-from app.routes.schedule import ns_schedule
-from app.routes.trainer import ns_trainer
-from app.routes.request import ns_request
-from app.models.Center import Center
-from app.models.CenterPrImage import CenterPrImage
-from app.models.TrainingUser import TrainingUser
-from app.models.Request import Request
-from app.models.Schedule import Schedule
-from app.models.Trainer import Trainer
-from app.models.TrainerPrImage import TrainerPrImage
-from app.models.Users import Users
-from app.models.TrainerAvailability import TrainerAvailability
+from app.routes.route_users import ns_user
+from app.routes.route_schedule import ns_schedule
+from app.routes.route_trainer import ns_trainer
+from app.routes.route_request import ns_request
+from app.models.model_Center import Center
+from app.models.model_CenterPrImage import CenterPrImage
+from app.models.model_TrainingUser import TrainingUser
+from app.models.model_Request import Request
+from app.models.model_Schedule import Schedule
+from app.models.model_Trainer import Trainer
+from app.models.model_TrainerPrImage import TrainerPrImage
+from app.models.model_Users import Users
+from app.models.model_TrainerAvailability import TrainerAvailability
 
 
 def create_app(env):

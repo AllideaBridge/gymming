@@ -8,12 +8,12 @@ from sqlalchemy import func
 from sqlalchemy.sql.functions import coalesce
 
 from app.common.Constants import SCHEDULE_CANCELLED, SCHEDULE_SCHEDULED
-from app.models.Users import Users
-from app.models.Trainer import Trainer
-from app.models.Center import Center
-from app.models.TrainingUser import TrainingUser
-from app.models.TrainerAvailability import TrainerAvailability
-from app.models.Schedule import Schedule
+from app.models.model_Users import Users
+from app.models.model_Trainer import Trainer
+from app.models.model_Center import Center
+from app.models.model_TrainingUser import TrainingUser
+from app.models.model_TrainerAvailability import TrainerAvailability
+from app.models.model_Schedule import Schedule
 from database import db
 
 ns_schedule = Namespace('schedules', description='Schedules related operations')

@@ -5,11 +5,11 @@ from datetime import datetime
 from app.common.Constants import REQUEST_FROM_USER, REQUEST_STATUS_WAITING, REQUEST_STATUS_REJECTED, \
     REQUEST_TYPE_CANCEL, REQUEST_STATUS_APPROVED, SCHEDULE_CANCELLED, REQUEST_TYPE_MODIFY, SCHEDULE_MODIFIED, \
     SCHEDULE_SCHEDULED
-from app.models.Users import Users
-from app.models.Trainer import Trainer
-from app.models.Request import Request
-from app.models.TrainingUser import TrainingUser
-from app.models.Schedule import Schedule
+from app.models.model_Users import Users
+from app.models.model_Trainer import Trainer
+from app.models.model_Request import Request
+from app.models.model_TrainingUser import TrainingUser
+from app.models.model_Schedule import Schedule
 from database import db
 
 ns_request = Namespace('request', description='Request related operations')

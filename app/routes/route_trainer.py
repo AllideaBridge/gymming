@@ -1,6 +1,6 @@
 from flask_restx import Namespace, Resource, fields
 
-from app.models.Trainer import Trainer
+from app.models.model_Trainer import Trainer
 from database import db
 
 ns_trainer = Namespace('trainer', description='Trainer API')
