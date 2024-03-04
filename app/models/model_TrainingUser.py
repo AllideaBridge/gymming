@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from database import db
 
 
@@ -9,3 +11,7 @@ class TrainingUser(db.Model):
     lesson_current_count = db.Column(db.Integer, nullable=True)
     training_user_delete_flag = db.Column(db.Boolean, default=False)
     schedules = db.relationship('Schedule', backref='lesson', lazy='dynamic')
+    exercise_days = db.Column(db.String(50), nullable=True)
+    special_notes = db.Column(db.String(255), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    deleted_at = db.Column(db.DateTime)
