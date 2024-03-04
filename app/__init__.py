@@ -4,6 +4,7 @@ from flask import Flask
 from flask_restx import Api
 
 from database import db
+from app.routes.route_training_user import ns_training_user
 from app.routes.route_users import ns_user
 from app.routes.route_schedule import ns_schedule
 from app.routes.route_trainer import ns_trainer
@@ -27,6 +28,7 @@ def create_app(env):
     api.add_namespace(ns_trainer)
     api.add_namespace(ns_schedule)
     api.add_namespace(ns_request)
+    api.add_namespace(ns_training_user)
 
     if env == "test":
         logging.basicConfig()
