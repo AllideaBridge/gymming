@@ -32,7 +32,7 @@ class TrainerScheduleTestCase(unittest.TestCase):
 
         # Users, TrainingUser, Schedule 레코드 추가
         for i in range(1, 4):
-            user = Users(user_name=f'Test User {i}',
+            user = Users(user_name=f'Test User {i}', user_phone_number= f'010-1020-101{i}',
                          user_email=f'user{i}@example.com', user_login_platform='platform')  # 필드는 Users 모델에 맞게 조정
             db.session.add(user)
             db.session.commit()
