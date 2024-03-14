@@ -22,8 +22,8 @@ training_user_model = ns_training_user.model('TrainingUser', {
 })
 
 
-@ns_training_user.route('/register')
-class UserRegister(Resource):
+@ns_training_user.route('/user')
+class TrainingUserUser(Resource):
     @ns_training_user.expect(training_user_model)
     def post(self):
         data = ns_training_user.payload
@@ -45,6 +45,43 @@ class UserRegister(Resource):
         db.session.commit()
 
         return {'message': '새로운 회원이 등록되었습니다.'}, 200
+
+    def put(self):
+        data = ns_training_user.payload
+        training_user_id = data['training_user_id']
+        lesson_total_count = data['lesson_total_count']
+        lesson_current_count = data['lesson_current_count']
+
+        training_user = TrainingUser.query.filter_by(training_user_id=training_user_id).first()
+
+        if training_user:
+            # 레코드의 lesson_total_count, lesson_current_count 업데이트
+            training_user.lesson_total_count = lesson_total_count
+            training_user.lesson_current_count = lesson_current_count
+
+            # 데이터베이스 세션을 통해 변경 사항 커밋
+            db.session.commit()
+
+            return {'message': 'TrainingUser updated successfully'}, 200
+        else:
+            return {'message': 'TrainingUser not found'}, 404
+
+    def delete(self):
+        data = ns_training_user.payload
+        training_user_id = data['training_user_id']
+
+        training_user = TrainingUser.query.filter_by(training_user_id=training_user_id).first()
+
+        if training_user:
+            # 레코드의 lesson_total_count, lesson_current_count 업데이트
+            training_user.training_user_delete_flag = True
+
+            # 데이터베이스 세션을 통해 변경 사항 커밋
+            db.session.commit()
+
+            return {'message': 'TrainingUser updated successfully'}, 200
+        else:
+            return {'message': 'TrainingUser not found'}, 404
 
 
 @ns_training_user.route('/month-schedules')
