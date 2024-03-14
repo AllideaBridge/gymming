@@ -104,8 +104,4 @@ class TrainingUserList(Resource):
             'deleted_at': tu.deleted_at.strftime('%Y-%m-%d %H:%M:%S') if tu.deleted_at else ""
         } for tu, un in training_users], 200
 
-# todo : 회원 정보 수정
-# todo : 회원 정보 삭제
-# todo : 회원 상세 조회 (회원 정보, 과거 운동했던 날짜 ),
-#           날짜 클릭시 과거 스케쥴 상세 조회
 # todo : 리스트 조회시 pagenation 적용.
