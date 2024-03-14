@@ -13,7 +13,8 @@ user_model = ns_user.model('Users', {
     'user_phone_number': fields.String(description='User phone number'),
     'user_profile_img_url': fields.String(description='User profile image URL'),
     'user_delete_flag': fields.Boolean(default=False, description='User delete flag'),
-    'user_login_platform': fields.String(required=True, description='User login platform')
+    'user_login_platform': fields.String(required=True, description='User login platform'),
+    'user_birthday': fields.String(required=True, description='User BirthDay')
 })
 
 
@@ -21,8 +22,7 @@ user_model = ns_user.model('Users', {
 class UserResource(Resource):
     @ns_user.marshal_with(user_model)
     def get(self, user_id):
-        user = Users.query.get_or_404(user_id)
-        # todo : filter_by 로 수정
+        user = Users.query.filter_by(user_id=user_id).first()
         return user
 
     @ns_user.expect(user_model)
