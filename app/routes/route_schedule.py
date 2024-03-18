@@ -218,6 +218,7 @@ class TrainerDaySchedule(Resource):
                   & (Trainer.trainer_delete_flag == False)) \
             .all()
 
+        # todo : 스케쥴 정렬 조건 추가하기.
         result['schedules'] = [{
             'schedule_id': schedule.schedule_id,
             'schedule_start_time': schedule.schedule_start_time.strftime(DATETIMEFORMAT)
