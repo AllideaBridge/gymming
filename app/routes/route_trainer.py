@@ -1,6 +1,7 @@
 from flask import request
 from flask_restx import Namespace, Resource, fields
 
+from app.common.Constants import DATETIMEFORMAT
 from app.models.model_Trainer import Trainer
 from app.models.model_Users import Users
 from app.models.model_TrainingUser import TrainingUser
@@ -100,8 +101,8 @@ class TrainingUserList(Resource):
             'lesson_current_count': tu.lesson_current_count,
             'exercise_days': tu.exercise_days,
             'special_notes': tu.special_notes,
-            'created_at': tu.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-            'deleted_at': tu.deleted_at.strftime('%Y-%m-%d %H:%M:%S') if tu.deleted_at else ""
+            'created_at': tu.created_at.strftime(DATETIMEFORMAT),
+            'deleted_at': tu.deleted_at.strftime(DATETIMEFORMAT) if tu.deleted_at else ""
         } for tu, un in training_users], 200
 
 # todo : 리스트 조회시 pagenation 적용.

@@ -28,7 +28,7 @@ class TrainerScheduleTestCase(unittest.TestCase):
 
         # Users, TrainingUser, Schedule 레코드 추가
         for i in range(1, 4):
-            user = Users(user_name=f'Test User {i}',user_phone_number= f'010-1020-101{i}',
+            user = Users(user_name=f'Test User {i}', user_phone_number=f'010-1020-101{i}',
                          user_email=f'user{i}@example.com', user_login_platform='platform')  # 필드는 Users 모델에 맞게 조정
             db.session.add(user)
             db.session.commit()
@@ -76,9 +76,9 @@ class TrainerScheduleTestCase(unittest.TestCase):
         self.assertEqual(response.get_json(),
                          {'availability_end_time': '22:30', 'availability_start_time': '14:30', 'lesson_minutes': 60,
                           'lesson_change_range': 3,
-                          'schedules': [{'schedule_id': 3, 'schedule_start_time': 'Wed, 10 Jan 2024 11:30:00 GMT'},
-                                        {'schedule_id': 5, 'schedule_start_time': 'Wed, 10 Jan 2024 12:30:00 GMT'},
-                                        {'schedule_id': 7, 'schedule_start_time': 'Wed, 10 Jan 2024 13:30:00 GMT'}]})
+                          'schedules': [{'schedule_id': 3, 'schedule_start_time': '2024-01-10 11:30:00'},
+                                        {'schedule_id': 5, 'schedule_start_time': '2024-01-10 12:30:00'},
+                                        {'schedule_id': 7, 'schedule_start_time': '2024-01-10 13:30:00'}]})
 
     def test_트레이너_일주일_스케쥴(self):
         trainer_id = 1

@@ -7,7 +7,7 @@ from flask_restx import Namespace, Resource, fields
 from sqlalchemy import func
 from sqlalchemy.sql.functions import coalesce
 
-from app.common.Constants import SCHEDULE_CANCELLED, SCHEDULE_SCHEDULED
+from app.common.Constants import SCHEDULE_CANCELLED, SCHEDULE_SCHEDULED, DATETIMEFORMAT, DATEFORMAT
 from app.models.model_Users import Users
 from app.models.model_Trainer import Trainer
 from app.models.model_Center import Center
@@ -38,7 +38,7 @@ class UserMonthScheduleList(Resource):
             db.extract('year', Schedule.schedule_start_time) == year,
             db.extract('month', Schedule.schedule_start_time) == month).all()
 
-        scheduled_dates = [schedule[0].strftime('%Y-%m-%d') for schedule in schedules]
+        scheduled_dates = [schedule[0].strftime(DATEFORMAT) for schedule in schedules]
 
         return sorted(scheduled_dates)
 
@@ -76,7 +76,7 @@ class ScheduleChangeResource(Resource):
         requested_date = body['requested_date']
 
         try:
-            requested_date = datetime.strptime(requested_date, '%Y-%m-%d %H:%M:%S')
+            requested_date = datetime.strptime(requested_date, DATETIMEFORMAT)
         except ValueError as e:
             logging.log(logging.ERROR, e)
             return jsonify({'error': 'Invalid date format'}), 400
@@ -146,7 +146,7 @@ class TrainerMonthSchedule(Resource):
         for day in range(1, num_days + 1):
             date = datetime(year, month, day)
             if date.weekday() in available_week_days:
-                available_dates.add(date.strftime('%Y-%m-%d'))
+                available_dates.add(date.strftime(DATEFORMAT))
 
         # 3단계: 조건을 충족 하는 날짜 조회 및 "근무 가능 날짜"에서 제외
         occupied_dates = db.session.query(
@@ -167,7 +167,7 @@ class TrainerMonthSchedule(Resource):
         ).all()
 
         for date, in occupied_dates:
-            available_dates.discard(date.strftime('%Y-%m-%d'))
+            available_dates.discard(date.strftime(DATEFORMAT))
 
         # "근무 가능 날짜" 목록에서 조건을 충족하는 날짜를 제외한 결과 반환
         return sorted(list(available_dates))
@@ -220,7 +220,7 @@ class TrainerDaySchedule(Resource):
 
         result['schedules'] = [{
             'schedule_id': schedule.schedule_id,
-            'schedule_start_time': schedule.schedule_start_time
+            'schedule_start_time': schedule.schedule_start_time.strftime(DATETIMEFORMAT)
         } for schedule in schedules]
 
         return jsonify(result)
@@ -245,5 +245,5 @@ class TrainerWeekSchedule(Resource):
             .join(Users, Users.user_id == TrainingUser.user_id) \
             .all()
 
-        return [{'user_id': r[0], 'user_name': r[1], 'schedule_start_time': r[2].strftime('%Y-%m-%d %H:%M:%S')}
+        return [{'user_id': r[0], 'user_name': r[1], 'schedule_start_time': r[2].strftime(DATETIMEFORMAT)}
                 for r in results]

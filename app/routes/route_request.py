@@ -4,7 +4,7 @@ from datetime import datetime
 
 from app.common.Constants import REQUEST_FROM_USER, REQUEST_STATUS_WAITING, REQUEST_STATUS_REJECTED, \
     REQUEST_TYPE_CANCEL, REQUEST_STATUS_APPROVED, SCHEDULE_CANCELLED, REQUEST_TYPE_MODIFY, SCHEDULE_MODIFIED, \
-    SCHEDULE_SCHEDULED
+    SCHEDULE_SCHEDULED, DATETIMEFORMAT
 from app.models.model_Users import Users
 from app.models.model_Trainer import Trainer
 from app.models.model_Request import Request
@@ -85,9 +85,9 @@ class TrainerRequestListResource(Resource):
             .all()
 
         return [{'user_name': r[0], 'request_type': r[1],
-                 'request_time': r[2].strftime('%Y-%m-%d %H:%M:%S') if r[2] else "",
-                 'created_at': r[3].strftime('%Y-%m-%d %H:%M:%S'),
-                 'schedule_start_time': r[4].strftime('%Y-%m-%d %H:%M:%S'),
+                 'request_time': r[2].strftime(DATETIMEFORMAT) if r[2] else "",
+                 'created_at': r[3].strftime(DATETIMEFORMAT),
+                 'schedule_start_time': r[4].strftime(DATETIMEFORMAT),
                  'request_id': r[5], 'request_status': r[6]} for r in results]
 
 

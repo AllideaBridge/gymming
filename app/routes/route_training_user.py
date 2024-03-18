@@ -3,6 +3,7 @@ from datetime import datetime
 from flask import request
 from flask_restx import Resource, fields, Namespace
 
+from app.common.Constants import DATEFORMAT
 from app.models.model_Trainer import Trainer
 from app.models.model_Center import Center
 from app.models.model_Schedule import Schedule
@@ -138,7 +139,7 @@ class TrainingUserSchedule(Resource):
 
         # Center 정보가 없는 경우 None 또는 적절한 대체 값을 반환
         return {
-            "schedule_start_time": schedule_start_time.strftime('%Y-%m-%d') if schedule_start_time else None,
+            "schedule_start_time": schedule_start_time.strftime(DATEFORMAT) if schedule_start_time else None,
             "schedule_status": schedule_status,
             "center_location": center_location if center_location else "정보 없음",
             "center_name": center_name if center_name else "정보 없음"
