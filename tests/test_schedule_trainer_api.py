@@ -2,6 +2,7 @@ import unittest
 from datetime import datetime, timedelta
 
 from app import create_app, Trainer, TrainingUser, Users, Schedule, TrainerAvailability
+from app.common.Constants import DATETIMEFORMAT
 from database import db
 
 
@@ -85,6 +86,6 @@ class TrainerScheduleTestCase(unittest.TestCase):
         response = self.client.get(f'/schedules/trainer/{trainer_id}/2024/01/7/week')
         results = response.get_json()
         for result in results:
-            schedule_start_time = datetime.strptime(result['schedule_start_time'], '%Y-%m-%d %H:%M:%S')
+            schedule_start_time = datetime.strptime(result['schedule_start_time'], DATETIMEFORMAT)
             self.assertTrue(datetime(2024, 1, 7) <= schedule_start_time <= datetime(2024, 1, 14),
                             msg="schedule_start_time이 지정된 날짜 범위 내에 없습니다.")

@@ -3,6 +3,7 @@ import unittest
 from datetime import datetime, timedelta
 
 from app import create_app, Trainer, TrainingUser, Users, Schedule, TrainerAvailability, Center
+from app.common.Constants import DATEFORMAT
 from database import db
 
 
@@ -105,7 +106,7 @@ class TrainerUserTestCase(unittest.TestCase):
         for schedule in schedules:
             response = self.client.get(f'/training-user/schedule/{schedule.schedule_id}')
             data = response.get_json()
-            self.assertEqual(schedule.schedule_start_time.strftime('%Y-%m-%d'), data["schedule_start_time"])
+            self.assertEqual(schedule.schedule_start_time.strftime(DATEFORMAT), data["schedule_start_time"])
             self.assertEqual(schedule.schedule_status, data["schedule_status"])
 
         response = self.client.get(f'/users/{user.user_id}')

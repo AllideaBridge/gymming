@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from random import randint
 
 from app import create_app, Users, Schedule, Trainer, Center, TrainingUser
-from app.common.Constants import SCHEDULE_CANCELLED, SCHEDULE_SCHEDULED
+from app.common.Constants import SCHEDULE_CANCELLED, SCHEDULE_SCHEDULED, DATETIMEFORMAT
 from database import db
 
 
@@ -76,7 +76,7 @@ class ScheduleTestCase(unittest.TestCase):
 
     def test_유저_스케쥴_변경(self):
         schedule_id = 1
-        requested_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        requested_date = datetime.now().strftime(DATETIMEFORMAT)
         body = {
             'requested_date': requested_date
         }
@@ -91,7 +91,7 @@ class ScheduleTestCase(unittest.TestCase):
 
     def test_유저_없는_스케쥴_변경(self):
         schedule_id = 0
-        requested_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        requested_date = datetime.now().strftime(DATETIMEFORMAT)
         body = {
             'requested_date': requested_date
         }
