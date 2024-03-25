@@ -184,14 +184,7 @@ class RequestApproveResource(Resource):
                 if not request_time:
                     return {'message': 'Request time is missing'}, 400
 
-                conflict_schedule = db.session.query(Schedule). \
-                    join(TrainingUser, and_(TrainingUser.training_user_id == Schedule.training_user_id,
-                                            Schedule.schedule_status == SCHEDULE_SCHEDULED)). \
-                    join(Trainer, and_(Trainer.trainer_id == TrainingUser.trainer_id,
-                                       Trainer.trainer_id == trainer_id)). \
-                    filter(func.abs(func.timestampdiff(literal_column('MINUTE'), Schedule.schedule_start_time,
-                                                       request_time)) < Trainer.lesson_minutes). \
-                    first()
+                conflict_schedule = Trainer.conflict_trainer_schedule(trainer_id, request_time)
 
                 if conflict_schedule:
                     # 충돌하는 스케줄이 있는 경우
