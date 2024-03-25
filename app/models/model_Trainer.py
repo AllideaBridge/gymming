@@ -1,3 +1,8 @@
+from sqlalchemy import and_, func, literal_column
+
+from app.models.model_TrainingUser import TrainingUser
+from app.models.model_Schedule import Schedule
+from app.common.Constants import SCHEDULE_SCHEDULED
 from database import db
 
 
@@ -18,3 +23,16 @@ class Trainer(db.Model):
     lesson_minutes = db.Column(db.Integer, nullable=False)
     lesson_change_range = db.Column(db.Integer, nullable=False)
     trainer_delete_flag = db.Column(db.Boolean, default=False)
+
+    @staticmethod
+    def conflict_trainer_schedule(trainer_id, request_time):
+        conflict_schedule = db.session.query(Schedule). \
+            join(TrainingUser, and_(TrainingUser.training_user_id == Schedule.training_user_id,
+                                    Schedule.schedule_status == SCHEDULE_SCHEDULED)). \
+            join(Trainer, and_(Trainer.trainer_id == TrainingUser.trainer_id,
+                               Trainer.trainer_id == trainer_id)). \
+            filter(func.abs(func.timestampdiff(literal_column('MINUTE'), Schedule.schedule_start_time,
+                                               request_time)) < Trainer.lesson_minutes). \
+            first()
+
+        return conflict_schedule
