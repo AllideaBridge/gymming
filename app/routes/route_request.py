@@ -68,7 +68,7 @@ parser.add_argument('request_status', required=True, action='split',
 
 @ns_request.route('/trainer')
 class TrainerRequestListResource(Resource):
-    @ns_request.doc(description='트레이너에게 온 요청리스트를 조회합니다.',
+    @ns_request.doc(description='트레이너에게 온 요청 리스트를 조회합니다.',
                     params={
                         'trainer_id': '트레이너 id',
                         'request_status': 'WAITING or APPROVED or REJECTED'
@@ -105,7 +105,7 @@ class TrainerRequestListResource(Resource):
 
 @ns_request.route('/<int:request_id>/details')
 class RequestResource(Resource):
-    @ns_request.doc(description='한 요청에 대한 상세조회를 합니다.',
+    @ns_request.doc(description='한 요청에 대한 상세 조회를 합니다.',
                     params={
                         'request_id': '요청 id'
                     })
@@ -123,7 +123,7 @@ class RequestResource(Resource):
 @ns_request.route('/reject')
 class RequestRejectResource(Resource):
     @ns_request.expect(request_reject_model)
-    @ns_request.doc(description='요청을 생성합니다',
+    @ns_request.doc(description='요청을 거절 합니다',
                     params={
                         'request_id': '요청 id',
                         'request_reject_reason': '요청 거절 사유'
@@ -147,7 +147,7 @@ class RequestRejectResource(Resource):
 @ns_request.route('/approve')
 class RequestApproveResource(Resource):
     @ns_request.expect(request_approve_model)
-    @ns_request.doc(description='요청을 승인합니다.',
+    @ns_request.doc(description='요청을 승인 합니다.',
                     params={
                         'request_id': '요청 id',
                         'request_type': 'CANCEL or MODIFY'
