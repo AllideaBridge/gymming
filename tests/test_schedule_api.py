@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from random import randint
 
 from app import create_app, Users, Schedule, Trainer, Center, TrainingUser
-from app.common.Constants import SCHEDULE_CANCELLED, SCHEDULE_SCHEDULED
+from app.common.Constants import SCHEDULE_CANCELLED, SCHEDULE_SCHEDULED, DATETIMEFORMAT
 from database import db
 
 
@@ -15,7 +15,6 @@ class ScheduleTestCase(unittest.TestCase):
     def setUpClass(cls):
         cls.app = create_app('test')
         cls.app_context = cls.app.app_context()
-        # Todo : 컨텍스트 활성화 좀 더 찾아보기
         cls.app_context.push()
         db.drop_all()
         db.create_all()
@@ -51,7 +50,8 @@ class ScheduleTestCase(unittest.TestCase):
             start_time = datetime(2024, 1, 15 + i)
             for j in range(10):
                 schedule = Schedule(training_user_id=training_user.training_user_id,
-                                    schedule_start_time=start_time + timedelta(days=j))
+                                    schedule_start_time=start_time + timedelta(days=j),
+                                    schedule_status=SCHEDULE_SCHEDULED)
                 db.session.add(schedule)
             db.session.commit()
 
@@ -62,7 +62,7 @@ class ScheduleTestCase(unittest.TestCase):
     def test_유저_한달_스케쥴_있는_날짜_조회(self):
         response = self.client.get('/schedules/1/2024/1')  # 2024년 1월의 스케줄을 요청
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.get_json(),
+        self.assertEqual(response.get_json()['dates'],
                          ['2024-01-16', '2024-01-17', '2024-01-18', '2024-01-19', '2024-01-20', '2024-01-21',
                           '2024-01-22', '2024-01-23', '2024-01-24', '2024-01-25', '2024-01-26',
                           '2024-01-27', '2024-01-28', '2024-01-29', '2024-01-30', '2024-01-31'])
@@ -76,9 +76,9 @@ class ScheduleTestCase(unittest.TestCase):
 
     def test_유저_스케쥴_변경(self):
         schedule_id = 1
-        requested_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        request_time = datetime.now().strftime(DATETIMEFORMAT)
         body = {
-            'requested_date': requested_date
+            'request_time': request_time
         }
         response = self.client.post(f'/schedules/{schedule_id}/change', json=body)
         self.assertEqual(response.status_code, 200)
@@ -86,14 +86,14 @@ class ScheduleTestCase(unittest.TestCase):
         old_schedule = Schedule.query.filter_by(schedule_id=schedule_id).first()
         self.assertEqual(old_schedule.schedule_status, SCHEDULE_CANCELLED)
 
-        new_schedule = Schedule.query.filter_by(schedule_start_time=requested_date).first()
+        new_schedule = Schedule.query.filter_by(schedule_start_time=request_time).first()
         self.assertEqual(new_schedule.schedule_status, SCHEDULE_SCHEDULED)
 
     def test_유저_없는_스케쥴_변경(self):
         schedule_id = 0
-        requested_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        request_time = datetime.now().strftime(DATETIMEFORMAT)
         body = {
-            'requested_date': requested_date
+            'request_time': request_time
         }
         response = self.client.post(f'/schedules/{schedule_id}/change', json=body)
         self.assertEqual(response.status_code, 404)
@@ -105,3 +105,13 @@ class ScheduleTestCase(unittest.TestCase):
 
         old_schedule = Schedule.query.filter_by(schedule_id=schedule_id).first()
         self.assertEqual(old_schedule.schedule_status, SCHEDULE_CANCELLED)
+
+    def test_유저가_이미_있는_스케쥴로_변경하는_경우(self):
+        schedule = Schedule.query.filter_by(schedule_status=SCHEDULE_SCHEDULED).first()
+        schedule_id = schedule.schedule_id
+        request_time = schedule.schedule_start_time.strftime(DATETIMEFORMAT)
+        body = {
+            'request_time': request_time
+        }
+        response = self.client.post(f'/schedules/{schedule_id}/change', json=body)
+        self.assertIn('conflict', response.get_json()['message'])

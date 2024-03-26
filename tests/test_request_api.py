@@ -129,10 +129,9 @@ class TrainerScheduleTestCase(unittest.TestCase):
     def test_유효하지_않은_request_type으로_승인_요청한_경우(self):
         body = {
             'request_id': 1,
-            'request_type': "invalid_request_type",
-            'request_time': datetime.now()
+            'request_type': "invalid_request_type"
         }
-        response = self.client.post('/request/approve', json=body)
+        response = self.client.post(URL_REQUEST_APPROVED, json=body)
         self.assertEqual(response.status_code, 400)
 
     def test_취소_요청이_승인된_경우(self):
@@ -158,8 +157,7 @@ class TrainerScheduleTestCase(unittest.TestCase):
         schedule_id = request.schedule_id
         body = {
             'request_id': request_id,
-            'request_type': REQUEST_TYPE_MODIFY,
-            'request_time': str(request.request_time)
+            'request_type': REQUEST_TYPE_MODIFY
         }
         response = self.client.post(URL_REQUEST_APPROVED, json=body)
         request = Request.query.filter_by(request_id=request_id).first()
@@ -177,8 +175,7 @@ class TrainerScheduleTestCase(unittest.TestCase):
         request_id = request.request_id
         body = {
             'request_id': request_id,
-            'request_type': REQUEST_TYPE_MODIFY,
-            'request_time': str(request.request_time)
+            'request_type': REQUEST_TYPE_MODIFY
         }
         response = self.client.post(URL_REQUEST_APPROVED, json=body)
         self.assertEqual(response.status_code, 400)
@@ -198,8 +195,7 @@ class TrainerScheduleTestCase(unittest.TestCase):
 
         body = {
             'request_id': request_id,
-            'request_type': REQUEST_TYPE_MODIFY,
-            'request_time': str(request.request_time)
+            'request_type': REQUEST_TYPE_MODIFY
         }
         response = self.client.post(URL_REQUEST_APPROVED, json=body)
         self.assertEqual(response.status_code, 400)

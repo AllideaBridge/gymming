@@ -3,6 +3,7 @@ import unittest
 from datetime import datetime, timedelta
 
 from app import create_app, Trainer, TrainingUser, Users, Schedule, TrainerAvailability, Center
+from app.common.Constants import DATEFORMAT
 from database import db
 
 
@@ -50,16 +51,16 @@ class TrainerUserTestCase(unittest.TestCase):
                 'special_notes': '무릎 부상 주의'
             }
 
-            response = self.client.post('/training-user/user', json=data)
+            response = self.client.post('/trainer/training-user/user', json=data)
             self.assertEqual(response.status_code, 200)
             self.assertIn('새로운 회원이 등록되었습니다.', response.json['message'])
 
-        response = self.client.get(f'/trainer/training_users?trainer_id={trainer.trainer_id}')
+        response = self.client.get(f'/trainer/training-user?trainer_id={trainer.trainer_id}')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.get_json()), len(users))
 
         response = self.client.get(
-            f'/trainer/training_users?trainer_id={trainer.trainer_id}&training_user_delete_flag=true')
+            f'/trainer/training-user?trainer_id={trainer.trainer_id}&training_user_delete_flag=true')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.get_json()), 0)
 
@@ -99,13 +100,13 @@ class TrainerUserTestCase(unittest.TestCase):
         db.session.commit()
 
         response = self.client.get(
-            f'/training-user/month-schedules?training_user_id={training_user.training_user_id}&year={2024}&month={1}')
+            f'/trainer/training-user/month-schedules?training_user_id={training_user.training_user_id}&year={2024}&month={1}')
         data = response.get_json()["schedules"]
         self.assertEqual(len(data), len(schedules))
         for schedule in schedules:
-            response = self.client.get(f'/training-user/schedule/{schedule.schedule_id}')
+            response = self.client.get(f'/trainer/training-user/schedule/{schedule.schedule_id}')
             data = response.get_json()
-            self.assertEqual(schedule.schedule_start_time.strftime('%Y-%m-%d'), data["schedule_start_time"])
+            self.assertEqual(schedule.schedule_start_time.strftime(DATEFORMAT), data["schedule_start_time"])
             self.assertEqual(schedule.schedule_status, data["schedule_status"])
 
         response = self.client.get(f'/users/{user.user_id}')
@@ -148,7 +149,7 @@ class TrainerUserTestCase(unittest.TestCase):
         training_user_id = training_user.training_user_id
         lesson_total_count = 10
         lesson_current_count = 10
-        response = self.client.put('/training-user/user', json={
+        response = self.client.put('/trainer/training-user/user', json={
             'training_user_id': training_user_id,
             'lesson_total_count': lesson_total_count,
             'lesson_current_count': lesson_current_count
@@ -160,7 +161,7 @@ class TrainerUserTestCase(unittest.TestCase):
         self.assertEqual(training_user_from_db.lesson_current_count, lesson_current_count)
         self.assertEqual(training_user_from_db.lesson_total_count, lesson_total_count)
 
-        self.client.delete('/training-user/user', json={
+        self.client.delete('/trainer/training-user/user', json={
             'training_user_id': training_user_id
         })
 
