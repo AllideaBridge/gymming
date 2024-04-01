@@ -1,7 +1,6 @@
 from flask_restx import Namespace, Resource, fields
 
-from app.entities.entity_users import Users
-from database import db
+from app.services.service_user import user_service
 
 ns_user = Namespace('users', description='User API')
 
@@ -22,26 +21,19 @@ user_model = ns_user.model('Users', {
 class UserResource(Resource):
     @ns_user.marshal_with(user_model)
     def get(self, user_id):
-        user = Users.query.filter_by(user_id=user_id).first()
-        return user
+        return user_service.get_user(user_id)
 
     @ns_user.expect(user_model)
     @ns_user.marshal_with(user_model)
     def put(self, user_id):
-        user = Users.query.get_or_404(user_id)
-        # todo : filter_by 로 수정 후 없는 경우 예외처리
-        data = ns_user.payload
+        user = user_service.get_user(user_id)
+        if user is None:
+            # TODO: Exception 만들기
+            raise Exception("없는 유저임")
 
-        user.user_email = data.get('user_email', user.user_email)
-        user.user_name = data.get('user_name', user.user_name)
-        user.user_gender = data.get('user_gender', user.user_gender)
-        user.user_phone_number = data.get('user_phone_number', user.user_phone_number)
-        user.user_profile_img_url = data.get('user_profile_img_url', user.user_profile_img_url)
-        user.user_delete_flag = data.get('user_delete_flag', user.user_delete_flag)
-        user.user_login_platform = data.get('user_login_platform', user.user_login_platform)
-
-        db.session.commit()
-        return user
+        update_data = ns_user.payload
+        updated_user = user_service.update_user(user, update_data)
+        return updated_user
 
 
 @ns_user.route('')
@@ -49,16 +41,5 @@ class UserListResource(Resource):
     @ns_user.expect(user_model, validate=True)
     @ns_user.marshal_with(user_model, code=201)
     def post(self):
-        data = ns_user.payload
-        user = Users(
-            user_email=data['user_email'],
-            user_name=data.get('user_name'),
-            user_gender=data.get('user_gender'),
-            user_phone_number=data.get('user_phone_number'),
-            user_profile_img_url=data.get('user_profile_img_url'),
-            user_delete_flag=data.get('user_delete_flag', False),
-            user_login_platform=data['user_login_platform']
-        )
-        db.session.add(user)
-        db.session.commit()
-        return user, 201
+        new_user = user_service.create_user(ns_user.payload)
+        return new_user, 201
