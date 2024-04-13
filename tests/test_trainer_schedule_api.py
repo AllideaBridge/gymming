@@ -2,7 +2,7 @@ import unittest
 from datetime import datetime, timedelta
 
 from app import create_app, Trainer, TrainingUser, Users, Schedule, TrainerAvailability
-from app.common.Constants import DATETIMEFORMAT
+from app.common.constants import DATETIMEFORMAT
 from database import db
 
 
