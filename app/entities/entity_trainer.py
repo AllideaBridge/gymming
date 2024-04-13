@@ -1,8 +1,8 @@
 from sqlalchemy import and_, func, literal_column
 
-from app.models.model_TrainingUser import TrainingUser
-from app.models.model_Schedule import Schedule
-from app.common.Constants import SCHEDULE_SCHEDULED
+from app.entities.entity_training_user import TrainingUser
+from app.entities.entity_schedule import Schedule
+from app.common.constants import SCHEDULE_SCHEDULED
 from database import db
 
 

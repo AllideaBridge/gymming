@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from random import randint
 
 from app import create_app, Users, Schedule, Trainer, Center, TrainingUser
-from app.common.Constants import SCHEDULE_CANCELLED, SCHEDULE_SCHEDULED, DATETIMEFORMAT
+from app.common.constants import SCHEDULE_CANCELLED, SCHEDULE_SCHEDULED, DATETIMEFORMAT
 from database import db
 
 

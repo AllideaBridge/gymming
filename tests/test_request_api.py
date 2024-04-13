@@ -2,7 +2,7 @@ import unittest
 from datetime import datetime, timedelta
 
 from app import create_app, Trainer, TrainingUser, Users, Schedule, Request
-from app.common.Constants import REQUEST_TYPE_CANCEL, REQUEST_TYPE_MODIFY, REQUEST_STATUS_WAITING, \
+from app.common.constants import REQUEST_TYPE_CANCEL, REQUEST_TYPE_MODIFY, REQUEST_STATUS_WAITING, \
     REQUEST_STATUS_REJECTED, REQUEST_STATUS_APPROVED, SCHEDULE_CANCELLED, SCHEDULE_MODIFIED, SCHEDULE_SCHEDULED
 from database import db
 
