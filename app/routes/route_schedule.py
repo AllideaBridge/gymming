@@ -1,21 +1,24 @@
+import http
 import logging
 from datetime import datetime, date
-from calendar import monthrange
 
+from flask import request
 from flask_restx import Namespace, Resource, fields
-from sqlalchemy import func
-from sqlalchemy.sql.functions import coalesce
-
-from app.common.Constants import SCHEDULE_CANCELLED, SCHEDULE_SCHEDULED, DATETIMEFORMAT, DATEFORMAT
-from app.models.model_Users import Users
-from app.models.model_Trainer import Trainer
-from app.models.model_Center import Center
-from app.models.model_TrainingUser import TrainingUser
-from app.models.model_TrainerAvailability import TrainerAvailability
-from app.models.model_Schedule import Schedule
+from app.common.constants import SCHEDULE_CANCELLED, SCHEDULE_SCHEDULED, DATETIMEFORMAT
+from app.common.exceptions import BadRequestError
+from app.entities.entity_users import Users
+from app.entities.entity_trainer import Trainer
+from app.entities.entity_center import Center
+from app.entities.entity_training_user import TrainingUser
+from app.entities.entity_trainer_availability import TrainerAvailability
+from app.entities.entity_schedule import Schedule
+from app.routes.models.model_schedule import request_get_schedules_model
+from app.services.service_schedule import ScheduleService
 from database import db
 
-ns_schedule = Namespace('schedules', description='Schedules related operations')
+ns_schedule = Namespace('schedules', description='Schedules related operations', path='/schedules')
+
+
 
 # API 모델 정의
 user_schedule_model = ns_schedule.model('UserSchedule', {
@@ -31,6 +34,10 @@ user_schedule_model = ns_schedule.model('UserSchedule', {
 # 회원의 한달 중 스케쥴이 있는 날짜 조회.
 @ns_schedule.route('/<int:user_id>/<int:year>/<int:month>')
 class UserMonthScheduleList(Resource):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.schedule_service = ScheduleService()
+
     @ns_schedule.doc(description='회원의 한달 중 스케쥴이 있는 날짜를 조회합니다.',
                      params={
                          'user_id': '유저 id',
@@ -38,18 +45,18 @@ class UserMonthScheduleList(Resource):
                          'month': '월'
                      })
     def get(self, user_id, year, month):
-        schedules = db.session.query(func.distinct(func.date(Schedule.schedule_start_time))).join(TrainingUser).filter(
-            TrainingUser.user_id == user_id,
-            db.extract('year', Schedule.schedule_start_time) == year,
-            db.extract('month', Schedule.schedule_start_time) == month).all()
+        scheduled_dates = self.schedule_service.get_user_month_schedule_date(user_id, year, month)
 
-        scheduled_dates = [schedule[0].strftime(DATEFORMAT) for schedule in schedules]
-
-        return {'dates': sorted(scheduled_dates)}
+        return {'dates': scheduled_dates}
 
 
+# todo : lesson_minutes 추가하기. 스케쥴 endtime을 계산하기 위함.
 @ns_schedule.route('/<int:user_id>/<int:year>/<int:month>/<int:day>')
 class UserDayScheduleList(Resource):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.schedule_service = ScheduleService()
+
     @ns_schedule.marshal_with(user_schedule_model)
     @ns_schedule.doc(description='회원의 해당 날의 스케쥴 리스트 조회.',
                      params={
@@ -59,29 +66,22 @@ class UserDayScheduleList(Resource):
                          'day': '일'
                      })
     def get(self, user_id, year, month, day):
-        schedules = db.session.query(
-            Trainer.trainer_name,
-            coalesce(Trainer.lesson_name, '').label('lesson_name'),
-            coalesce(Center.center_name, '').label('center_name'),
-            coalesce(Center.center_location, '').label('center_location'),
-            Schedule.schedule_start_time,
-            Schedule.schedule_id
-        ).join(TrainingUser, TrainingUser.training_user_id == Schedule.training_user_id) \
-            .join(Trainer, TrainingUser.trainer_id == Trainer.trainer_id) \
-            .outerjoin(Center, Trainer.center_id == Center.center_id) \
-            .filter(TrainingUser.user_id == user_id,
-                    func.year(Schedule.schedule_start_time) == year,
-                    func.month(Schedule.schedule_start_time) == month,
-                    func.day(Schedule.schedule_start_time) == day) \
-            .all()
+        schedules = self.schedule_service.get_user_day_schedule(user_id, year, month, day)
 
         return schedules
+
+
+schedule_change_model = ns_schedule.model('ScheduleChangeModel', {
+    # 'schedule_id': fields.Integer(required=True, description='스케쥴 id'),
+    'request_time': fields.String(required=True, description='변경 시간')
+})
 
 
 # todo: 스케쥴 조회시 스케쥴 상태 조건 추가
 
 @ns_schedule.route('/<int:schedule_id>/change')
 class ScheduleChangeResource(Resource):
+    @ns_schedule.expect(schedule_change_model)
     @ns_schedule.doc(description='스케쥴 변경 가능 기간인 경우 스케쥴 변경 api',
                      params={
                          'schedule_id': '스케쥴 id',
@@ -114,6 +114,7 @@ class ScheduleChangeResource(Resource):
                     # 충돌하는 스케줄이 있는 경우
                     return {'message': 'New schedule conflicts with existing schedules of the trainer'}, 400
 
+                # todo : modified로 바꾸기
                 schedule.schedule_status = SCHEDULE_CANCELLED
                 db.session.add(schedule)
 
@@ -154,6 +155,10 @@ class ScheduleCancelResource(Resource):
 # 입력 받은 year, month중 트레이너의 근무 스케쥴이 꽉 차지 않은 날짜 배열을 리턴한다.
 @ns_schedule.route('/trainer/<int:trainer_id>/<int:year>/<int:month>')
 class TrainerMonthSchedule(Resource):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.schedule_service = ScheduleService()
+
     @ns_schedule.doc(description='트레이너의 스케쥴 조정이 가능한 날을 리턴한다.',
                      params={
                          'trainer_id': '트레이너 id',
@@ -161,49 +166,8 @@ class TrainerMonthSchedule(Resource):
                          'month': '월'
                      })
     def get(self, trainer_id, year, month):
-        # 1단계: 트레이너의 전체 가능 요일 조회
-        available_week_days = db.session.query(
-            TrainerAvailability.week_day
-        ).filter_by(
-            trainer_id=trainer_id
-        ).all()
-
-        if not available_week_days:
-            return []
-
-        available_week_days = set([week_day for week_day, in available_week_days])
-
-        # 2단계: 해당 월의 모든 날짜를 순회하며 "근무 가능 날짜" 목록 생성
-        available_dates = set()
-        num_days = monthrange(year, month)[1]
-        for day in range(1, num_days + 1):
-            date = datetime(year, month, day)
-            if date.weekday() in available_week_days:
-                available_dates.add(date.strftime(DATEFORMAT))
-
-        # 3단계: 조건을 충족 하는 날짜 조회 및 "근무 가능 날짜"에서 제외
-        occupied_dates = db.session.query(
-            func.date(Schedule.schedule_start_time).label('date')
-        ).join(TrainingUser, TrainingUser.training_user_id == Schedule.training_user_id
-               ).join(Trainer, Trainer.trainer_id == TrainingUser.trainer_id
-                      ).join(TrainerAvailability, db.and_(
-            Trainer.trainer_id == TrainerAvailability.trainer_id,
-            func.weekday(Schedule.schedule_start_time) == TrainerAvailability.week_day
-        )).filter(
-            Trainer.trainer_id == trainer_id,
-            func.year(Schedule.schedule_start_time) == year,
-            func.month(Schedule.schedule_start_time) == month
-        ).group_by(
-            func.date(Schedule.schedule_start_time)
-        ).having(
-            func.max(TrainerAvailability.possible_lesson_cnt) <= func.count()
-        ).all()
-
-        for date, in occupied_dates:
-            available_dates.discard(date.strftime(DATEFORMAT))
-
-        # "근무 가능 날짜" 목록에서 조건을 충족하는 날짜를 제외한 결과 반환
-        return sorted(list(available_dates))
+        available_dates = self.schedule_service.get_available_trainer_month_schedule(trainer_id, year, month)
+        return available_dates
 
 
 @ns_schedule.route('/trainer/<int:trainer_id>/<int:year>/<int:month>/<int:day>')
@@ -295,3 +259,40 @@ class TrainerWeekSchedule(Resource):
 
         return [{'user_id': r[0], 'user_name': r[1], 'schedule_start_time': r[2].strftime(DATETIMEFORMAT)}
                 for r in results]
+
+
+@ns_schedule.route('/{schedule_id}')
+class ScheduleController(Resource):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.schedule_service = ScheduleService()
+
+    def get(self, schedule_id):
+        pass
+
+
+request_get_schedules = ns_schedule.model('RequestGetSchedules', request_get_schedules_model)
+
+@ns_schedule.route('')
+class SchedulesController(Resource):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.schedule_service = ScheduleService()
+
+    @ns_schedule.expect(request_get_schedules)
+    def get(self):
+        params = {
+            'training_user_id': request.args.get('training_user_id', type=int),
+            'trainer_id': request.args.get('trainer_id', type=int),
+            'user_id': request.args.get('user_id', type=int),
+            'year': request.args.get('year', type=int),
+            'month': request.args.get('month', type=int),
+            'day': request.args.get('day', type=int),
+            'week': request.args.get('week'),
+            'possible': request.args.get('possible'),
+            'page': request.args.get('page', type=int),
+            'per_page': request.args.get('per_page', type=int)
+        }
+
+        response = self.schedule_service.handle_request(params)
+        return response, http.HTTPStatus.OK

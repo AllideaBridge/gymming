@@ -3,16 +3,17 @@ from datetime import datetime
 from flask import request
 from flask_restx import Namespace, Resource, fields
 
-from app.common.Constants import DATETIMEFORMAT, DATEFORMAT
-from app.models.model_Center import Center
-from app.models.model_Trainer import Trainer
-from app.models.model_Users import Users
-from app.models.model_Schedule import Schedule
-from app.models.model_TrainingUser import TrainingUser
+from app.common.constants import DATETIMEFORMAT, DATEFORMAT
+from app.entities.entity_center import Center
+from app.entities.entity_trainer import Trainer
+from app.entities.entity_users import Users
+from app.entities.entity_schedule import Schedule
+from app.entities.entity_training_user import TrainingUser
 from database import db
 
 ns_trainer = Namespace('trainer', description='Trainer API')
 
+# todo : 트레이너 상세조회시 엔터티 필드 최신화
 trainer_model = ns_trainer.model('Trainer', {
     'trainer_id': fields.Integer(readOnly=True, description='Trainer ID'),
     'user_id': fields.Integer(required=True, description='User ID of the Trainer'),
@@ -257,4 +258,4 @@ class TrainingUserSchedule(Resource):
             "center_name": center_name if center_name else "정보 없음"
         }
 
-# todo : 리스트 조회시 pagenation 적용.
+

@@ -8,15 +8,15 @@ from app.routes.route_users import ns_user
 from app.routes.route_schedule import ns_schedule
 from app.routes.route_trainer import ns_trainer
 from app.routes.route_request import ns_request
-from app.models.model_Center import Center
-from app.models.model_CenterPrImage import CenterPrImage
-from app.models.model_TrainingUser import TrainingUser
-from app.models.model_Request import Request
-from app.models.model_Schedule import Schedule
-from app.models.model_Trainer import Trainer
-from app.models.model_TrainerPrImage import TrainerPrImage
-from app.models.model_Users import Users
-from app.models.model_TrainerAvailability import TrainerAvailability
+from app.entities.entity_center import Center
+from app.entities.entity_center_pr_image import CenterPrImage
+from app.entities.entity_training_user import TrainingUser
+from app.entities.entity_request import Request
+from app.entities.entity_schedule import Schedule
+from app.entities.entity_trainer import Trainer
+from app.entities.entity_trainer_pr_image import TrainerPrImage
+from app.entities.entity_users import Users
+from app.entities.entity_trainer_availability import TrainerAvailability
 
 
 def create_app(env):

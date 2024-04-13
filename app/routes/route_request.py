@@ -2,14 +2,14 @@ from flask_restx import Namespace, fields, Resource, reqparse
 from sqlalchemy import and_, func, literal_column
 from datetime import datetime
 
-from app.common.Constants import REQUEST_FROM_USER, REQUEST_STATUS_WAITING, REQUEST_STATUS_REJECTED, \
+from app.common.constants import REQUEST_FROM_USER, REQUEST_STATUS_WAITING, REQUEST_STATUS_REJECTED, \
     REQUEST_TYPE_CANCEL, REQUEST_STATUS_APPROVED, SCHEDULE_CANCELLED, REQUEST_TYPE_MODIFY, SCHEDULE_MODIFIED, \
     SCHEDULE_SCHEDULED, DATETIMEFORMAT
-from app.models.model_Users import Users
-from app.models.model_Trainer import Trainer
-from app.models.model_Request import Request
-from app.models.model_TrainingUser import TrainingUser
-from app.models.model_Schedule import Schedule
+from app.entities.entity_users import Users
+from app.entities.entity_trainer import Trainer
+from app.entities.entity_request import Request
+from app.entities.entity_training_user import TrainingUser
+from app.entities.entity_schedule import Schedule
 from database import db
 
 ns_request = Namespace('request', description='Request related operations')
@@ -191,6 +191,7 @@ class RequestApproveResource(Resource):
                     return {'message': 'New schedule conflicts with existing schedules of the trainer'}, 400
 
                 schedule_record.schedule_status = SCHEDULE_MODIFIED
+                # todo : db.session.add(schedule_record)
                 new_schedule = Schedule(
                     training_user_id=schedule_record.training_user_id,
                     schedule_start_time=request_time,
@@ -203,3 +204,11 @@ class RequestApproveResource(Resource):
 
         except Exception as e:
             print(e)
+
+# 컨트롤러의 역할 : 유효성 검사
+# todo : 서비스 레이어로 비즈니스 로직 빼기.
+# todo : 중앙집중식 에러 처리. 에러 헨들러 작성.
+# todo : 로깅.
+# todo : 환경 변수 적용
+# todo : 리스트 조회시 pagenation 적용.
+# todo : 시간 지난 pt 완료 처리 하는 api? batch?

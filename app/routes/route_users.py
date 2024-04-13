@@ -1,6 +1,6 @@
 from flask_restx import Namespace, Resource, fields
 
-from app.models.model_Users import Users
+from app.entities.entity_users import Users
 from database import db
 
 ns_user = Namespace('users', description='User API')
