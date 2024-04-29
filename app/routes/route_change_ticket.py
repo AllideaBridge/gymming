@@ -2,8 +2,8 @@ from flask_restx import Namespace, fields, Resource, reqparse
 from sqlalchemy import and_, func, literal_column
 from datetime import datetime
 
-from app.common.constants import REQUEST_FROM_USER, REQUEST_STATUS_WAITING, REQUEST_STATUS_REJECTED, \
-    REQUEST_TYPE_CANCEL, REQUEST_STATUS_APPROVED, SCHEDULE_CANCELLED, REQUEST_TYPE_MODIFY, SCHEDULE_MODIFIED, \
+from app.common.constants import CHANGE_FROM_USER, CHANGE_TICKET_STATUS_WAITING, CHANGE_TICKET_STATUS_REJECTED, \
+    CHANGE_TICKET_TYPE_CANCEL, CHANGE_TICKET_STATUS_APPROVED, SCHEDULE_CANCELLED, CHANGE_TICKET_TYPE_MODIFY, SCHEDULE_MODIFIED, \
     SCHEDULE_SCHEDULED, DATETIMEFORMAT
 from app.entities.entity_users import Users
 from app.entities.entity_trainer import Trainer
@@ -79,17 +79,17 @@ class TrainerRequestListResource(Resource):
         request_status = args['request_status']  # 쿼리 파라미터에서 요청 상태 추출
 
         # 요청 상태에 따른 조건 분기
-        if REQUEST_STATUS_WAITING in request_status and len(request_status) == 1:
-            status_condition = ChangeTicket.status == REQUEST_STATUS_WAITING
-        elif REQUEST_STATUS_APPROVED in request_status and REQUEST_STATUS_REJECTED in request_status and len(
+        if CHANGE_TICKET_STATUS_WAITING in request_status and len(request_status) == 1:
+            status_condition = ChangeTicket.status == CHANGE_TICKET_STATUS_WAITING
+        elif CHANGE_TICKET_STATUS_APPROVED in request_status and CHANGE_TICKET_STATUS_REJECTED in request_status and len(
                 request_status) == 2:
-            status_condition = ChangeTicket.status.in_([REQUEST_STATUS_APPROVED, REQUEST_STATUS_REJECTED])
+            status_condition = ChangeTicket.status.in_([CHANGE_TICKET_STATUS_APPROVED, CHANGE_TICKET_STATUS_REJECTED])
         else:
             return {'message': 'Invalid Request Status'}, 400
 
         results = db.session.query(Users.user_name, ChangeTicket.change_type, ChangeTicket.request_time, ChangeTicket.created_at,
                                    Schedule.schedule_start_time, ChangeTicket.id, ChangeTicket.status) \
-            .join(Schedule, and_(ChangeTicket.schedule_id == Schedule.schedule_id, ChangeTicket.change_from == REQUEST_FROM_USER,
+            .join(Schedule, and_(ChangeTicket.schedule_id == Schedule.schedule_id, ChangeTicket.change_from == CHANGE_FROM_USER,
                                  status_condition)) \
             .join(TrainingUser, and_(Schedule.training_user_id == TrainingUser.training_user_id,
                                      TrainingUser.trainer_id == trainer_id)) \
@@ -137,7 +137,7 @@ class RequestRejectResource(Resource):
         if not request_record:
             return {'message': '요청을 찾을 수 없습니다.'}, 404
 
-        request_record.status = REQUEST_STATUS_REJECTED  # 요청 상태를 '거절됨'으로 변경
+        request_record.status = CHANGE_TICKET_STATUS_REJECTED  # 요청 상태를 '거절됨'으로 변경
         request_record.reject_reason = request_reject_reason  # 거절 사유를 데이터베이스에 업데이트
 
         db.session.commit()  # 변경 사항을 데이터베이스에 커밋
@@ -158,26 +158,26 @@ class RequestApproveResource(Resource):
             request_type = data['request_type']
             request_id = data['request_id']
 
-            if request_type != REQUEST_TYPE_MODIFY and request_type != REQUEST_TYPE_CANCEL:
+            if request_type != CHANGE_TICKET_TYPE_MODIFY and request_type != CHANGE_TICKET_TYPE_CANCEL:
                 return {'message': '유효하지 않은 파라미터'}, 400
 
             request_record = ChangeTicket.query.filter_by(request_id=request_id).first()
             if not request_record:
                 return {'message': 'Request not found'}, 404
 
-            if request_record.status != REQUEST_STATUS_WAITING:
+            if request_record.status != CHANGE_TICKET_STATUS_WAITING:
                 return {'message': 'Invalid Request Status'}, 400
 
-            request_record.status = REQUEST_STATUS_APPROVED
+            request_record.status = CHANGE_TICKET_STATUS_APPROVED
 
             schedule_record = Schedule.query.filter_by(schedule_id=request_record.schedule_id).first()
             if not schedule_record:
                 return {'message': 'Schedule not found'}, 404
 
-            if request_type == REQUEST_TYPE_CANCEL:
+            if request_type == CHANGE_TICKET_TYPE_CANCEL:
                 schedule_record.schedule_status = SCHEDULE_CANCELLED
 
-            if request_type == REQUEST_TYPE_MODIFY:
+            if request_type == CHANGE_TICKET_TYPE_MODIFY:
                 training_user = TrainingUser.query.filter_by(training_user_id=schedule_record.training_user_id).first()
                 trainer_id = training_user.trainer_id
                 request_time = request_record.request_time

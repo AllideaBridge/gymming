@@ -2,8 +2,8 @@ import unittest
 from datetime import datetime, timedelta
 
 from app import create_app, Trainer, TrainingUser, Users, Schedule, ChangeTicket
-from app.common.constants import REQUEST_TYPE_CANCEL, REQUEST_TYPE_MODIFY, REQUEST_STATUS_WAITING, \
-    REQUEST_STATUS_REJECTED, REQUEST_STATUS_APPROVED, SCHEDULE_CANCELLED, SCHEDULE_MODIFIED, SCHEDULE_SCHEDULED
+from app.common.constants import CHANGE_TICKET_TYPE_CANCEL, CHANGE_TICKET_TYPE_MODIFY, CHANGE_TICKET_STATUS_WAITING, \
+    CHANGE_TICKET_STATUS_REJECTED, CHANGE_TICKET_STATUS_APPROVED, SCHEDULE_CANCELLED, SCHEDULE_MODIFIED, SCHEDULE_SCHEDULED
 from database import db
 
 URL_REQUEST_APPROVED = '/request/approve'
@@ -46,14 +46,14 @@ class TrainerScheduleTestCase(unittest.TestCase):
                 db.session.add(schedule)
                 db.session.commit()
                 request_cancel = ChangeTicket(schedule_id=schedule.schedule_id, request_from='user',
-                                              request_type=REQUEST_TYPE_CANCEL,
+                                              request_type=CHANGE_TICKET_TYPE_CANCEL,
                                               request_description=f'request cancel description {j}',
-                                              request_status=REQUEST_STATUS_WAITING)
+                                              request_status=CHANGE_TICKET_STATUS_WAITING)
                 db.session.add(request_cancel)
                 request_modify = ChangeTicket(schedule_id=schedule.schedule_id, request_from='user',
-                                              request_type=REQUEST_TYPE_MODIFY, request_time=datetime.now(),
+                                              request_type=CHANGE_TICKET_TYPE_MODIFY, request_time=datetime.now(),
                                               request_description=f'request modify description {j}',
-                                              request_status=REQUEST_STATUS_WAITING)
+                                              request_status=CHANGE_TICKET_STATUS_WAITING)
                 db.session.add(request_modify)
                 db.session.commit()
 
@@ -63,7 +63,7 @@ class TrainerScheduleTestCase(unittest.TestCase):
 
     def test_트레이너_요청_대기_리스트_조회(self):
         trainer_id = 1
-        response = self.client.get(f'/request/trainer?trainer_id={trainer_id}&request_status={REQUEST_STATUS_WAITING}')
+        response = self.client.get(f'/request/trainer?trainer_id={trainer_id}&request_status={CHANGE_TICKET_STATUS_WAITING}')
         self.assertEqual(response.status_code, 200)
         data = response.get_json()
 
@@ -75,12 +75,12 @@ class TrainerScheduleTestCase(unittest.TestCase):
                     .filter(ChangeTicket.id == req['request_id']) \
                     .first()
                 self.assertEqual(r[0], trainer_id)
-                self.assertEqual(r[1], REQUEST_STATUS_WAITING)
+                self.assertEqual(r[1], CHANGE_TICKET_STATUS_WAITING)
 
     def test_트레이너_요청_완료_리스트_조회(self):
         trainer_id = 1
         response = self.client.get(
-            f'/request/trainer?trainer_id={trainer_id}&request_status={REQUEST_STATUS_APPROVED},{REQUEST_STATUS_REJECTED}')
+            f'/request/trainer?trainer_id={trainer_id}&request_status={CHANGE_TICKET_STATUS_APPROVED},{CHANGE_TICKET_STATUS_REJECTED}')
         self.assertEqual(response.status_code, 200)
         data = response.get_json()
 
@@ -92,12 +92,12 @@ class TrainerScheduleTestCase(unittest.TestCase):
                     .filter(ChangeTicket.id == req['request_id']) \
                     .first()
                 self.assertEqual(r[0], trainer_id)
-                self.assertIn(r[1], [REQUEST_STATUS_APPROVED, REQUEST_STATUS_REJECTED])
+                self.assertIn(r[1], [CHANGE_TICKET_STATUS_APPROVED, CHANGE_TICKET_STATUS_REJECTED])
 
     def test_유효하지_않은_파라미터로_트레이너_요청_리스트_조회(self):
         trainer_id = 1
         response = self.client.get(
-            f'/request/trainer?trainer_id={trainer_id}&request_status={REQUEST_STATUS_WAITING},{REQUEST_STATUS_REJECTED}')
+            f'/request/trainer?trainer_id={trainer_id}&request_status={CHANGE_TICKET_STATUS_WAITING},{CHANGE_TICKET_STATUS_REJECTED}')
         self.assertEqual(response.status_code, 400)
 
     def test_요청_상세조회(self):
@@ -123,7 +123,7 @@ class TrainerScheduleTestCase(unittest.TestCase):
 
         data = ChangeTicket.query.filter_by(request_id=request_id).first()
         self.assertEqual(request_id, data.id)
-        self.assertEqual(REQUEST_STATUS_REJECTED, data.status)
+        self.assertEqual(CHANGE_TICKET_STATUS_REJECTED, data.status)
         self.assertEqual(request_reject_reason, data.reject_reason)
 
     def test_유효하지_않은_request_type으로_승인_요청한_경우(self):
@@ -135,29 +135,29 @@ class TrainerScheduleTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
 
     def test_취소_요청이_승인된_경우(self):
-        request = ChangeTicket.query.filter_by(request_type=REQUEST_TYPE_CANCEL,
-                                               request_status=REQUEST_STATUS_WAITING).first()
+        request = ChangeTicket.query.filter_by(request_type=CHANGE_TICKET_TYPE_CANCEL,
+                                               request_status=CHANGE_TICKET_STATUS_WAITING).first()
         request_id = request.id
         schedule_id = request.schedule_id
         body = {
             'request_id': request_id,
-            'request_type': REQUEST_TYPE_CANCEL
+            'request_type': CHANGE_TICKET_TYPE_CANCEL
         }
         response = self.client.post(URL_REQUEST_APPROVED, json=body)
         request = ChangeTicket.query.filter_by(request_id=request_id).first()
         schedule = Schedule.query.filter_by(schedule_id=schedule_id).first()
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(request.status, REQUEST_STATUS_APPROVED)
+        self.assertEqual(request.status, CHANGE_TICKET_STATUS_APPROVED)
         self.assertEqual(schedule.schedule_status, SCHEDULE_CANCELLED)
 
     def test_수정_요청이_승인된_경우(self):
-        request = ChangeTicket.query.filter_by(request_type=REQUEST_TYPE_MODIFY,
-                                               request_status=REQUEST_STATUS_WAITING).first()
+        request = ChangeTicket.query.filter_by(request_type=CHANGE_TICKET_TYPE_MODIFY,
+                                               request_status=CHANGE_TICKET_STATUS_WAITING).first()
         request_id = request.id
         schedule_id = request.schedule_id
         body = {
             'request_id': request_id,
-            'request_type': REQUEST_TYPE_MODIFY
+            'request_type': CHANGE_TICKET_TYPE_MODIFY
         }
         response = self.client.post(URL_REQUEST_APPROVED, json=body)
         request = ChangeTicket.query.filter_by(request_id=request_id).first()
@@ -165,25 +165,25 @@ class TrainerScheduleTestCase(unittest.TestCase):
         new_schedule = Schedule.query.filter_by(training_user_id=schedule.training_user_id,
                                                 schedule_start_time=request.request_time).first()
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(request.status, REQUEST_STATUS_APPROVED)
+        self.assertEqual(request.status, CHANGE_TICKET_STATUS_APPROVED)
         self.assertEqual(schedule.schedule_status, SCHEDULE_MODIFIED)
         self.assertIsNotNone(new_schedule)
 
     def test_요청_상태가_WAITING이_아닌_경우(self):
-        request = ChangeTicket.query.filter_by(request_type=REQUEST_TYPE_MODIFY,
-                                               request_status=REQUEST_STATUS_APPROVED).first()
+        request = ChangeTicket.query.filter_by(request_type=CHANGE_TICKET_TYPE_MODIFY,
+                                               request_status=CHANGE_TICKET_STATUS_APPROVED).first()
         request_id = request.id
         body = {
             'request_id': request_id,
-            'request_type': REQUEST_TYPE_MODIFY
+            'request_type': CHANGE_TICKET_TYPE_MODIFY
         }
         response = self.client.post(URL_REQUEST_APPROVED, json=body)
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.get_json()['message'], 'Invalid Request Status')
 
     def test_요청_시간에_이미_스케쥴이_있는_경우(self):
-        request = ChangeTicket.query.filter_by(request_type=REQUEST_TYPE_MODIFY,
-                                               request_status=REQUEST_STATUS_WAITING).first()
+        request = ChangeTicket.query.filter_by(request_type=CHANGE_TICKET_TYPE_MODIFY,
+                                               request_status=CHANGE_TICKET_STATUS_WAITING).first()
         request_id = request.id
         schedule_id = request.schedule_id
         schedule = Schedule.query.filter_by(schedule_id=schedule_id).first()
@@ -195,7 +195,7 @@ class TrainerScheduleTestCase(unittest.TestCase):
 
         body = {
             'request_id': request_id,
-            'request_type': REQUEST_TYPE_MODIFY
+            'request_type': CHANGE_TICKET_TYPE_MODIFY
         }
         response = self.client.post(URL_REQUEST_APPROVED, json=body)
         self.assertEqual(response.status_code, 400)
