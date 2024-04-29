@@ -69,7 +69,7 @@ class TrainerScheduleTestCase(unittest.TestCase):
 
         if data:
             for req in data:
-                r = db.session.query(TrainingUser.trainer_id, ChangeTicket.request_status) \
+                r = db.session.query(TrainingUser.trainer_id, ChangeTicket.status) \
                     .join(Schedule, ChangeTicket.schedule_id == Schedule.schedule_id) \
                     .join(TrainingUser, Schedule.training_user_id == TrainingUser.training_user_id) \
                     .filter(ChangeTicket.id == req['request_id']) \
@@ -86,7 +86,7 @@ class TrainerScheduleTestCase(unittest.TestCase):
 
         if data:
             for req in data:
-                r = db.session.query(TrainingUser.trainer_id, ChangeTicket.request_status) \
+                r = db.session.query(TrainingUser.trainer_id, ChangeTicket.status) \
                     .join(Schedule, ChangeTicket.schedule_id == Schedule.schedule_id) \
                     .join(TrainingUser, Schedule.training_user_id == TrainingUser.training_user_id) \
                     .filter(ChangeTicket.id == req['request_id']) \
@@ -123,8 +123,8 @@ class TrainerScheduleTestCase(unittest.TestCase):
 
         data = ChangeTicket.query.filter_by(request_id=request_id).first()
         self.assertEqual(request_id, data.id)
-        self.assertEqual(REQUEST_STATUS_REJECTED, data.request_status)
-        self.assertEqual(request_reject_reason, data.request_reject_reason)
+        self.assertEqual(REQUEST_STATUS_REJECTED, data.status)
+        self.assertEqual(request_reject_reason, data.reject_reason)
 
     def test_유효하지_않은_request_type으로_승인_요청한_경우(self):
         body = {
@@ -147,7 +147,7 @@ class TrainerScheduleTestCase(unittest.TestCase):
         request = ChangeTicket.query.filter_by(request_id=request_id).first()
         schedule = Schedule.query.filter_by(schedule_id=schedule_id).first()
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(request.request_status, REQUEST_STATUS_APPROVED)
+        self.assertEqual(request.status, REQUEST_STATUS_APPROVED)
         self.assertEqual(schedule.schedule_status, SCHEDULE_CANCELLED)
 
     def test_수정_요청이_승인된_경우(self):
@@ -165,7 +165,7 @@ class TrainerScheduleTestCase(unittest.TestCase):
         new_schedule = Schedule.query.filter_by(training_user_id=schedule.training_user_id,
                                                 schedule_start_time=request.request_time).first()
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(request.request_status, REQUEST_STATUS_APPROVED)
+        self.assertEqual(request.status, REQUEST_STATUS_APPROVED)
         self.assertEqual(schedule.schedule_status, SCHEDULE_MODIFIED)
         self.assertIsNotNone(new_schedule)
 

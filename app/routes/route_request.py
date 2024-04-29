@@ -80,16 +80,16 @@ class TrainerRequestListResource(Resource):
 
         # 요청 상태에 따른 조건 분기
         if REQUEST_STATUS_WAITING in request_status and len(request_status) == 1:
-            status_condition = ChangeTicket.request_status == REQUEST_STATUS_WAITING
+            status_condition = ChangeTicket.status == REQUEST_STATUS_WAITING
         elif REQUEST_STATUS_APPROVED in request_status and REQUEST_STATUS_REJECTED in request_status and len(
                 request_status) == 2:
-            status_condition = ChangeTicket.request_status.in_([REQUEST_STATUS_APPROVED, REQUEST_STATUS_REJECTED])
+            status_condition = ChangeTicket.status.in_([REQUEST_STATUS_APPROVED, REQUEST_STATUS_REJECTED])
         else:
             return {'message': 'Invalid Request Status'}, 400
 
-        results = db.session.query(Users.user_name, ChangeTicket.request_type, ChangeTicket.request_time, ChangeTicket.created_at,
-                                   Schedule.schedule_start_time, ChangeTicket.id, ChangeTicket.request_status) \
-            .join(Schedule, and_(ChangeTicket.schedule_id == Schedule.schedule_id, ChangeTicket.request_from == REQUEST_FROM_USER,
+        results = db.session.query(Users.user_name, ChangeTicket.change_type, ChangeTicket.request_time, ChangeTicket.created_at,
+                                   Schedule.schedule_start_time, ChangeTicket.id, ChangeTicket.status) \
+            .join(Schedule, and_(ChangeTicket.schedule_id == Schedule.schedule_id, ChangeTicket.change_from == REQUEST_FROM_USER,
                                  status_condition)) \
             .join(TrainingUser, and_(Schedule.training_user_id == TrainingUser.training_user_id,
                                      TrainingUser.trainer_id == trainer_id)) \
@@ -110,7 +110,7 @@ class RequestResource(Resource):
                         'request_id': '요청 id'
                     })
     def get(self, request_id):
-        request = db.session.query(ChangeTicket.id, ChangeTicket.request_description) \
+        request = db.session.query(ChangeTicket.id, ChangeTicket.description) \
             .filter(ChangeTicket.id == request_id) \
             .first()
 
@@ -137,8 +137,8 @@ class RequestRejectResource(Resource):
         if not request_record:
             return {'message': '요청을 찾을 수 없습니다.'}, 404
 
-        request_record.request_status = REQUEST_STATUS_REJECTED  # 요청 상태를 '거절됨'으로 변경
-        request_record.request_reject_reason = request_reject_reason  # 거절 사유를 데이터베이스에 업데이트
+        request_record.status = REQUEST_STATUS_REJECTED  # 요청 상태를 '거절됨'으로 변경
+        request_record.reject_reason = request_reject_reason  # 거절 사유를 데이터베이스에 업데이트
 
         db.session.commit()  # 변경 사항을 데이터베이스에 커밋
         return {'message': '요청이 성공적으로 거절되었습니다.', 'request_reject_reason': request_reject_reason}, 200
@@ -165,10 +165,10 @@ class RequestApproveResource(Resource):
             if not request_record:
                 return {'message': 'Request not found'}, 404
 
-            if request_record.request_status != REQUEST_STATUS_WAITING:
+            if request_record.status != REQUEST_STATUS_WAITING:
                 return {'message': 'Invalid Request Status'}, 400
 
-            request_record.request_status = REQUEST_STATUS_APPROVED
+            request_record.status = REQUEST_STATUS_APPROVED
 
             schedule_record = Schedule.query.filter_by(schedule_id=request_record.schedule_id).first()
             if not schedule_record:
