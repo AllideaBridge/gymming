@@ -18,8 +18,6 @@ from database import db
 
 ns_schedule = Namespace('schedules', description='Schedules related operations', path='/schedules')
 
-
-
 # API 모델 정의
 user_schedule_model = ns_schedule.model('UserSchedule', {
     'trainer_name': fields.String,
@@ -29,6 +27,42 @@ user_schedule_model = ns_schedule.model('UserSchedule', {
     'schedule_start_time': fields.DateTime,
     'schedule_id': fields.Integer
 })
+
+
+@ns_schedule.route('/<int:schedule_id>')
+class Schedule(Resource):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.schedule_service = ScheduleService()
+
+    def get(self, schedule_id):
+        pass
+
+    def put(self, schedule_id):
+        start_time = datetime.strptime(request.json['start_time'], DATETIMEFORMAT)
+        status = request.json['status']
+
+    def delete(self, schedule_id):
+        pass
+
+
+@ns_schedule.route('/user/<int:user_id>')
+class UserSchedule(Resource):
+
+    def get(self, user_id):
+        pass
+
+
+@ns_schedule.route('/trainer/<int:trainer_id>')
+class TrainerSchedule(Resource):
+    def get(self, trainer_id):
+        pass
+
+
+@ns_schedule.route('/trainer/<int:trainer_id>/users/<int:user_id>')
+class TrainerAssignedUserSchedule(Resource):
+    def get(self, trainer_id, user_id):
+        pass
 
 
 # 회원의 한달 중 스케쥴이 있는 날짜 조회.
@@ -272,6 +306,7 @@ class ScheduleController(Resource):
 
 
 request_get_schedules = ns_schedule.model('RequestGetSchedules', request_get_schedules_model)
+
 
 @ns_schedule.route('')
 class SchedulesController(Resource):
