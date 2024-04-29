@@ -6,7 +6,7 @@ from app.common.constants import CHANGE_TICKET_TYPE_CANCEL, CHANGE_TICKET_TYPE_M
     CHANGE_TICKET_STATUS_REJECTED, CHANGE_TICKET_STATUS_APPROVED, SCHEDULE_CANCELLED, SCHEDULE_MODIFIED, SCHEDULE_SCHEDULED
 from database import db
 
-URL_REQUEST_APPROVED = '/request/approve'
+URL_CHANGE_TICKET_APPROVED = '/change-ticket/approve'
 
 
 class TrainerScheduleTestCase(unittest.TestCase):
@@ -45,16 +45,16 @@ class TrainerScheduleTestCase(unittest.TestCase):
                                     schedule_start_time=start_time + timedelta(days=j))
                 db.session.add(schedule)
                 db.session.commit()
-                request_cancel = ChangeTicket(schedule_id=schedule.schedule_id, request_from='user',
-                                              request_type=CHANGE_TICKET_TYPE_CANCEL,
-                                              request_description=f'request cancel description {j}',
-                                              request_status=CHANGE_TICKET_STATUS_WAITING)
-                db.session.add(request_cancel)
-                request_modify = ChangeTicket(schedule_id=schedule.schedule_id, request_from='user',
-                                              request_type=CHANGE_TICKET_TYPE_MODIFY, request_time=datetime.now(),
-                                              request_description=f'request modify description {j}',
-                                              request_status=CHANGE_TICKET_STATUS_WAITING)
-                db.session.add(request_modify)
+                change_ticket_cancel = ChangeTicket(schedule_id=schedule.schedule_id, change_from='user',
+                                              change_type=CHANGE_TICKET_TYPE_CANCEL,
+                                              description=f'Change ticket cancel description {j}',
+                                              status=CHANGE_TICKET_STATUS_WAITING)
+                db.session.add(change_ticket_cancel)
+                change_ticket_modify = ChangeTicket(schedule_id=schedule.schedule_id, change_from='user',
+                                              change_type=CHANGE_TICKET_TYPE_MODIFY, request_time=datetime.now(),
+                                              description=f'Change ticket modify description {j}',
+                                              status=CHANGE_TICKET_STATUS_WAITING)
+                db.session.add(change_ticket_modify)
                 db.session.commit()
 
     @classmethod
@@ -63,7 +63,7 @@ class TrainerScheduleTestCase(unittest.TestCase):
 
     def test_트레이너_요청_대기_리스트_조회(self):
         trainer_id = 1
-        response = self.client.get(f'/request/trainer?trainer_id={trainer_id}&request_status={CHANGE_TICKET_STATUS_WAITING}')
+        response = self.client.get(f'/change-ticket/trainer?trainer_id={trainer_id}&status={CHANGE_TICKET_STATUS_WAITING}')
         self.assertEqual(response.status_code, 200)
         data = response.get_json()
 
@@ -72,7 +72,7 @@ class TrainerScheduleTestCase(unittest.TestCase):
                 r = db.session.query(TrainingUser.trainer_id, ChangeTicket.status) \
                     .join(Schedule, ChangeTicket.schedule_id == Schedule.schedule_id) \
                     .join(TrainingUser, Schedule.training_user_id == TrainingUser.training_user_id) \
-                    .filter(ChangeTicket.id == req['request_id']) \
+                    .filter(ChangeTicket.id == req['id']) \
                     .first()
                 self.assertEqual(r[0], trainer_id)
                 self.assertEqual(r[1], CHANGE_TICKET_STATUS_WAITING)
@@ -80,7 +80,7 @@ class TrainerScheduleTestCase(unittest.TestCase):
     def test_트레이너_요청_완료_리스트_조회(self):
         trainer_id = 1
         response = self.client.get(
-            f'/request/trainer?trainer_id={trainer_id}&request_status={CHANGE_TICKET_STATUS_APPROVED},{CHANGE_TICKET_STATUS_REJECTED}')
+            f'/change-ticket/trainer?trainer_id={trainer_id}&status={CHANGE_TICKET_STATUS_APPROVED},{CHANGE_TICKET_STATUS_REJECTED}')
         self.assertEqual(response.status_code, 200)
         data = response.get_json()
 
@@ -89,7 +89,7 @@ class TrainerScheduleTestCase(unittest.TestCase):
                 r = db.session.query(TrainingUser.trainer_id, ChangeTicket.status) \
                     .join(Schedule, ChangeTicket.schedule_id == Schedule.schedule_id) \
                     .join(TrainingUser, Schedule.training_user_id == TrainingUser.training_user_id) \
-                    .filter(ChangeTicket.id == req['request_id']) \
+                    .filter(ChangeTicket.id == req['id']) \
                     .first()
                 self.assertEqual(r[0], trainer_id)
                 self.assertIn(r[1], [CHANGE_TICKET_STATUS_APPROVED, CHANGE_TICKET_STATUS_REJECTED])
@@ -97,107 +97,107 @@ class TrainerScheduleTestCase(unittest.TestCase):
     def test_유효하지_않은_파라미터로_트레이너_요청_리스트_조회(self):
         trainer_id = 1
         response = self.client.get(
-            f'/request/trainer?trainer_id={trainer_id}&request_status={CHANGE_TICKET_STATUS_WAITING},{CHANGE_TICKET_STATUS_REJECTED}')
+            f'/change-ticket/trainer?trainer_id={trainer_id}&status={CHANGE_TICKET_STATUS_WAITING},{CHANGE_TICKET_STATUS_REJECTED}')
         self.assertEqual(response.status_code, 400)
 
     def test_요청_상세조회(self):
-        request_id = 1
-        response = self.client.get(f'/request/{request_id}/details')
+        change_ticket_id = 1
+        response = self.client.get(f'/change-ticket/{change_ticket_id}/details')
         data = response.get_json()
-        self.assertEqual(data['request_id'], request_id)
-        self.assertIn('request_description', data, msg='request_description is missing in response')
+        self.assertEqual(data['change_ticket_id'], change_ticket_id)
+        self.assertIn('description', data, msg='description is missing in response')
 
     def test_없는_요청_상세조회(self):
-        request_id = 0
-        response = self.client.get(f'/request/{request_id}/details')
+        change_ticket_id = 0
+        response = self.client.get(f'/change-ticket/{change_ticket_id}/details')
         self.assertEqual(response.status_code, 404)
 
     def test_요청_거절(self):
-        request_id = 1
-        request_reject_reason = "reject reason"
+        change_ticket_id = 1
+        reject_reason = "reject reason"
         body = {
-            "request_id": request_id,
-            "request_reject_reason": request_reject_reason
+            "id": change_ticket_id,
+            "reject_reason": reject_reason
         }
-        self.client.put('/request/reject', json=body)
+        self.client.put('/change-ticket/reject', json=body)
 
-        data = ChangeTicket.query.filter_by(request_id=request_id).first()
-        self.assertEqual(request_id, data.id)
+        data = ChangeTicket.query.filter_by(id=change_ticket_id).first()
+        self.assertEqual(change_ticket_id, data.id)
         self.assertEqual(CHANGE_TICKET_STATUS_REJECTED, data.status)
-        self.assertEqual(request_reject_reason, data.reject_reason)
+        self.assertEqual(reject_reason, data.reject_reason)
 
-    def test_유효하지_않은_request_type으로_승인_요청한_경우(self):
+    def test_유효하지_않은_change_type으로_승인_요청한_경우(self):
         body = {
-            'request_id': 1,
-            'request_type': "invalid_request_type"
+            'change_ticket_id': 1,
+            'change_type': "invalid_change_type"
         }
-        response = self.client.post(URL_REQUEST_APPROVED, json=body)
+        response = self.client.post(URL_CHANGE_TICKET_APPROVED, json=body)
         self.assertEqual(response.status_code, 400)
 
     def test_취소_요청이_승인된_경우(self):
-        request = ChangeTicket.query.filter_by(request_type=CHANGE_TICKET_TYPE_CANCEL,
-                                               request_status=CHANGE_TICKET_STATUS_WAITING).first()
-        request_id = request.id
-        schedule_id = request.schedule_id
+        change_ticket = ChangeTicket.query.filter_by(change_type=CHANGE_TICKET_TYPE_CANCEL,
+                                               status=CHANGE_TICKET_STATUS_WAITING).first()
+        change_ticket_id = change_ticket.id
+        schedule_id = change_ticket.schedule_id
         body = {
-            'request_id': request_id,
-            'request_type': CHANGE_TICKET_TYPE_CANCEL
+            'change_ticket_id': change_ticket_id,
+            'change_type': CHANGE_TICKET_TYPE_CANCEL
         }
-        response = self.client.post(URL_REQUEST_APPROVED, json=body)
-        request = ChangeTicket.query.filter_by(request_id=request_id).first()
+        response = self.client.post(URL_CHANGE_TICKET_APPROVED, json=body)
+        change_ticket = ChangeTicket.query.filter_by(change_ticket_id=change_ticket_id).first()
         schedule = Schedule.query.filter_by(schedule_id=schedule_id).first()
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(request.status, CHANGE_TICKET_STATUS_APPROVED)
+        self.assertEqual(change_ticket.status, CHANGE_TICKET_STATUS_APPROVED)
         self.assertEqual(schedule.schedule_status, SCHEDULE_CANCELLED)
 
     def test_수정_요청이_승인된_경우(self):
-        request = ChangeTicket.query.filter_by(request_type=CHANGE_TICKET_TYPE_MODIFY,
-                                               request_status=CHANGE_TICKET_STATUS_WAITING).first()
-        request_id = request.id
-        schedule_id = request.schedule_id
+        change_ticket = ChangeTicket.query.filter_by(change_type=CHANGE_TICKET_TYPE_MODIFY,
+                                               status=CHANGE_TICKET_STATUS_WAITING).first()
+        change_ticket_id = change_ticket.id
+        schedule_id = change_ticket.schedule_id
         body = {
-            'request_id': request_id,
-            'request_type': CHANGE_TICKET_TYPE_MODIFY
+            'id': change_ticket_id,
+            'change_type': CHANGE_TICKET_TYPE_MODIFY
         }
-        response = self.client.post(URL_REQUEST_APPROVED, json=body)
-        request = ChangeTicket.query.filter_by(request_id=request_id).first()
+        response = self.client.post(URL_CHANGE_TICKET_APPROVED, json=body)
+        change_ticket = ChangeTicket.query.filter_by(id=change_ticket_id).first()
         schedule = Schedule.query.filter_by(schedule_id=schedule_id).first()
         new_schedule = Schedule.query.filter_by(training_user_id=schedule.training_user_id,
-                                                schedule_start_time=request.request_time).first()
+                                                schedule_start_time=change_ticket.request_time).first()
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(request.status, CHANGE_TICKET_STATUS_APPROVED)
+        self.assertEqual(change_ticket.status, CHANGE_TICKET_STATUS_APPROVED)
         self.assertEqual(schedule.schedule_status, SCHEDULE_MODIFIED)
         self.assertIsNotNone(new_schedule)
 
     def test_요청_상태가_WAITING이_아닌_경우(self):
-        request = ChangeTicket.query.filter_by(request_type=CHANGE_TICKET_TYPE_MODIFY,
-                                               request_status=CHANGE_TICKET_STATUS_APPROVED).first()
-        request_id = request.id
+        change_ticket = ChangeTicket.query.filter_by(change_type=CHANGE_TICKET_TYPE_MODIFY,
+                                               status=CHANGE_TICKET_STATUS_APPROVED).first()
+        change_ticket_id = change_ticket.id
         body = {
-            'request_id': request_id,
-            'request_type': CHANGE_TICKET_TYPE_MODIFY
+            'change_ticket_id': change_ticket_id,
+            'change_type': CHANGE_TICKET_TYPE_MODIFY
         }
-        response = self.client.post(URL_REQUEST_APPROVED, json=body)
+        response = self.client.post(URL_CHANGE_TICKET_APPROVED, json=body)
         self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.get_json()['message'], 'Invalid Request Status')
+        self.assertEqual(response.get_json()['message'], 'Invalid Change ticket Status')
 
     def test_요청_시간에_이미_스케쥴이_있는_경우(self):
-        request = ChangeTicket.query.filter_by(request_type=CHANGE_TICKET_TYPE_MODIFY,
-                                               request_status=CHANGE_TICKET_STATUS_WAITING).first()
-        request_id = request.id
-        schedule_id = request.schedule_id
+        change_ticket = ChangeTicket.query.filter_by(change_type=CHANGE_TICKET_TYPE_MODIFY,
+                                               status=CHANGE_TICKET_STATUS_WAITING).first()
+        change_ticket_id = change_ticket.id
+        schedule_id = change_ticket.schedule_id
         schedule = Schedule.query.filter_by(schedule_id=schedule_id).first()
         already_exist_schedule = Schedule(training_user_id=schedule.training_user_id,
-                                          schedule_start_time=str(request.request_time),
+                                          schedule_start_time=str(change_ticket.request_time),
                                           schedule_status=SCHEDULE_SCHEDULED)
         db.session.add(already_exist_schedule)
         db.session.commit()
 
         body = {
-            'request_id': request_id,
-            'request_type': CHANGE_TICKET_TYPE_MODIFY
+            'change_ticket_id': change_ticket_id,
+            'change_type': CHANGE_TICKET_TYPE_MODIFY
         }
-        response = self.client.post(URL_REQUEST_APPROVED, json=body)
+        response = self.client.post(URL_CHANGE_TICKET_APPROVED, json=body)
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.get_json()['message'],
                          'New schedule conflicts with existing schedules of the trainer')
