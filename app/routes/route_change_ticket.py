@@ -12,80 +12,85 @@ from app.entities.entity_training_user import TrainingUser
 from app.entities.entity_schedule import Schedule
 from database import db
 
-ns_request = Namespace('request', description='Request related operations')
+ns_change_ticket = Namespace('change-ticket', description='Change ticket related operations')
 
 # 요청 생성 모델 정의
-request_model = ns_request.model('RequestModel', {
+change_ticket_model = ns_change_ticket.model('ChangeTicketModel', {
     'schedule_id': fields.Integer(required=True, description='스케줄 ID'),
-    'request_from': fields.String(required=True, description='요청자'),
-    'request_type': fields.String(required=True, description='요청 타입'),
-    'request_description': fields.String(required=True, description='요청 설명'),
-    'request_time': fields.DateTime(required=True, description='요청 시간')
+    'change_from': fields.String(required=True, description='요청자'),
+    'change_type': fields.String(required=True, description='변경티켓 타입'),
+    'description': fields.String(required=True, description='변경티켓 설명'),
+    'request_time': fields.DateTime(required=True, description='변경 요청 시간')
 })
 
-# 요청 승인 모델 정의
-request_approve_model = ns_request.model("RequestApproveModel", {
-    'request_id': fields.Integer(required=True, description='요청 ID'),
-    'request_type': fields.String(required=True, description='요청 타입'),
-    'request_time': fields.String(description='요청 시간')
+# 변경티켓에 대한 승인 모델 정의
+change_ticket_approve_model = ns_change_ticket.model("ChangeTicketApproveModel", {
+    'id': fields.Integer(required=True, description='변경티켓 ID'),
+    'change_type': fields.String(required=True, description='변경 타입'),
+    'request_time': fields.String(description='변경 요청 시간')
 })
 
-# 요청 거절 모델 정의
-request_reject_model = ns_request.model('RequestRejectModel', {
-    'request_reject_reason': fields.String(required=True, description='요청 거절 사유')
+# 변경티켓에 거절 모델 정의
+change_ticket_reject_model = ns_change_ticket.model('ChangeTicketRejectModel', {
+    'reject_reason': fields.String(required=True, description='변경 요청 거절 사유')
 })
 
 
-@ns_request.route('')
-class RequestResource(Resource):
-    @ns_request.expect(request_model)
-    @ns_request.doc(description='유저 또는 트레이너가 요청시 요청을 생성합니다.',
-                    params={'schedule_id': '스케쥴 id',
-                            'request_from': 'USER or TRAINER',
-                            'request_type': 'CANCEL or MODIFY',
-                            'request_description': '요청 내용',
+@ns_change_ticket.route('')
+class ChangeTicketResource(Resource):
+    @ns_change_ticket.expect(change_ticket_model)
+    @ns_change_ticket.doc(description='유저 또는 트레이너가 스케줄 변경 요청시 변경티켓을 생성합니다.',
+                          params={'schedule_id': '스케쥴 id',
+                            'change_from': 'USER or TRAINER',
+                            'change_type': 'CANCEL or MODIFY',
+                            'description': '요청 내용',
                             'request_time': '2024-01-10 12:30:00(%Y-%m-%d %H:%M:%S)'
                             })
     def post(self):
-        data = ns_request.payload
-        new_request = ChangeTicket(
+        data = ns_change_ticket.payload
+        new_change_ticket = ChangeTicket(
             schedule_id=data['schedule_id'],
-            request_from=data['request_from'],
-            request_type=data['request_type'],
-            request_description=data['request_description'],
+            change_from=data['change_from'],
+            change_type=data['change_type'],
+            description=data['description'],
             request_time=data['request_time']
         )
-        db.session.add(new_request)  # 새로운 요청 객체를 데이터베이스 세션에 추가
+        db.session.add(new_change_ticket)  # 새로운 요청 객체를 데이터베이스 세션에 추가
         db.session.commit()  # 변경 사항을 데이터베이스에 커밋
         return {'message': '새로운 요청이 성공적으로 생성되었습니다.'}, 201
 
 
 parser = reqparse.RequestParser()
 parser.add_argument('trainer_id', type=int, required=True, help='트레이너 ID')
-parser.add_argument('request_status', required=True, action='split',
-                    help='요청 상태 (REQUEST_STATUS_WAITING, REQUEST_STATUS_APPROVED, REQUEST_STATUS_REJECTED)')
+parser.add_argument('status', required=True, action='split',
+                    help='요청 상태 ('
+                         'CHANGE_TICKET_STATUS_WAITING, '
+                         'CHANGE_TICKET_STATUS_APPROVED, '
+                         'CHANGE_TICKET_STATUS_REJECTED'
+                         ')'
+                    )
 
 
-@ns_request.route('/trainer')
-class TrainerRequestListResource(Resource):
-    @ns_request.doc(description='트레이너에게 온 요청 리스트를 조회합니다.',
-                    params={
+@ns_change_ticket.route('/trainer')
+class TrainerChangeTicketListResource(Resource):
+    @ns_change_ticket.doc(description='트레이너에게 온 요청 리스트를 조회합니다.',
+                          params={
                         'trainer_id': '트레이너 id',
-                        'request_status': 'WAITING or APPROVED or REJECTED'
+                        'status': 'WAITING or APPROVED or REJECTED'
                     })
     def get(self):
         args = parser.parse_args()
         trainer_id = args['trainer_id']  # 쿼리 파라미터에서 트레이너 ID 추출
-        request_status = args['request_status']  # 쿼리 파라미터에서 요청 상태 추출
+        status = args['status']  # 쿼리 파라미터에서 요청 상태 추출
 
         # 요청 상태에 따른 조건 분기
-        if CHANGE_TICKET_STATUS_WAITING in request_status and len(request_status) == 1:
+        if CHANGE_TICKET_STATUS_WAITING in status and len(status) == 1:
             status_condition = ChangeTicket.status == CHANGE_TICKET_STATUS_WAITING
-        elif CHANGE_TICKET_STATUS_APPROVED in request_status and CHANGE_TICKET_STATUS_REJECTED in request_status and len(
-                request_status) == 2:
+        elif CHANGE_TICKET_STATUS_APPROVED in status and CHANGE_TICKET_STATUS_REJECTED in status and len(
+                status) == 2:
             status_condition = ChangeTicket.status.in_([CHANGE_TICKET_STATUS_APPROVED, CHANGE_TICKET_STATUS_REJECTED])
         else:
-            return {'message': 'Invalid Request Status'}, 400
+            return {'message': 'Invalid Change ticket Status'}, 400
 
         results = db.session.query(Users.user_name, ChangeTicket.change_type, ChangeTicket.request_time, ChangeTicket.created_at,
                                    Schedule.schedule_start_time, ChangeTicket.id, ChangeTicket.status) \
@@ -96,93 +101,93 @@ class TrainerRequestListResource(Resource):
             .join(Users, Users.user_id == TrainingUser.user_id) \
             .all()
 
-        return [{'user_name': r[0], 'request_type': r[1],
+        return [{'user_name': r[0], 'change_type': r[1],
                  'request_time': r[2].strftime(DATETIMEFORMAT) if r[2] else "",
                  'created_at': r[3].strftime(DATETIMEFORMAT),
                  'schedule_start_time': r[4].strftime(DATETIMEFORMAT),
-                 'request_id': r[5], 'request_status': r[6]} for r in results]
+                 'id': r[5], 'status': r[6]} for r in results]
 
 
-@ns_request.route('/<int:request_id>/details')
-class RequestResource(Resource):
-    @ns_request.doc(description='한 요청에 대한 상세 조회를 합니다.',
-                    params={
-                        'request_id': '요청 id'
+@ns_change_ticket.route('/<int:id>/details')
+class ChangeTicketDetailsResource(Resource):
+    @ns_change_ticket.doc(description='한 요청에 대한 상세 조회를 합니다.',
+                          params={
+                        'id': '요청 id'
                     })
-    def get(self, request_id):
-        request = db.session.query(ChangeTicket.id, ChangeTicket.description) \
-            .filter(ChangeTicket.id == request_id) \
+    def get(self, change_ticket_id):
+        change_ticket = db.session.query(ChangeTicket.id, ChangeTicket.description) \
+            .filter(ChangeTicket.id == change_ticket_id) \
             .first()
 
-        if not request:
-            return {'error': 'request not found'}, 404
+        if not change_ticket:
+            return {'error': 'change ticket not found'}, 404
 
-        return {"request_id": request[0], "request_description": request[1]}
+        return {"change_ticket_id": change_ticket[0], "description": change_ticket[1]}
 
 
-@ns_request.route('/reject')
-class RequestRejectResource(Resource):
-    @ns_request.expect(request_reject_model)
-    @ns_request.doc(description='요청을 거절 합니다',
-                    params={
-                        'request_id': '요청 id',
-                        'request_reject_reason': '요청 거절 사유'
+@ns_change_ticket.route('/reject')
+class ChangeTicketRejectResource(Resource):
+    @ns_change_ticket.expect(change_ticket_reject_model)
+    @ns_change_ticket.doc(description='요청을 거절 합니다',
+                          params={
+                        'id': '요청 id',
+                        'reject_reason': '요청 거절 사유'
                     })
     def put(self):
-        data = ns_request.payload  # 요청 본문에서 데이터 추출
-        request_id = data.get('request_id')
-        request_reject_reason = data.get('request_reject_reason')  # 거절 사유 추출
+        data = ns_change_ticket.payload  # 요청 본문에서 데이터 추출
+        change_ticket_id = data.get('id')
+        reject_reason = data.get('reject_reason')  # 거절 사유 추출
 
-        request_record = ChangeTicket.query.filter_by(request_id=request_id).first()
-        if not request_record:
+        change_ticket_record = ChangeTicket.query.filter_by(id=change_ticket_id).first()
+        if not change_ticket_record:
             return {'message': '요청을 찾을 수 없습니다.'}, 404
 
-        request_record.status = CHANGE_TICKET_STATUS_REJECTED  # 요청 상태를 '거절됨'으로 변경
-        request_record.reject_reason = request_reject_reason  # 거절 사유를 데이터베이스에 업데이트
+        change_ticket_record.status = CHANGE_TICKET_STATUS_REJECTED  # 요청 상태를 '거절됨'으로 변경
+        change_ticket_record.reject_reason = reject_reason  # 거절 사유를 데이터베이스에 업데이트
 
         db.session.commit()  # 변경 사항을 데이터베이스에 커밋
-        return {'message': '요청이 성공적으로 거절되었습니다.', 'request_reject_reason': request_reject_reason}, 200
+        return {'message': '요청이 성공적으로 거절되었습니다.', 'reject_reason': reject_reason}, 200
 
 
-@ns_request.route('/approve')
-class RequestApproveResource(Resource):
-    @ns_request.expect(request_approve_model)
-    @ns_request.doc(description='요청을 승인 합니다.',
-                    params={
-                        'request_id': '요청 id',
-                        'request_type': 'CANCEL or MODIFY'
+@ns_change_ticket.route('/approve')
+class ChangeTicketApproveResource(Resource):
+    @ns_change_ticket.expect(change_ticket_approve_model)
+    @ns_change_ticket.doc(description='요청을 승인 합니다.',
+                          params={
+                        'id': '요청 id',
+                        'change_type': 'CANCEL or MODIFY'
                     })
     def post(self):
         try:
-            data = ns_request.payload
-            request_type = data['request_type']
-            request_id = data['request_id']
+            data = ns_change_ticket.payload
+            change_type = data['change_type']
+            id = data['id']
 
-            if request_type != CHANGE_TICKET_TYPE_MODIFY and request_type != CHANGE_TICKET_TYPE_CANCEL:
+            if change_type != CHANGE_TICKET_TYPE_MODIFY and change_type != CHANGE_TICKET_TYPE_CANCEL:
                 return {'message': '유효하지 않은 파라미터'}, 400
 
-            request_record = ChangeTicket.query.filter_by(request_id=request_id).first()
-            if not request_record:
-                return {'message': 'Request not found'}, 404
+            change_ticket_record = ChangeTicket.query.filter_by(id=id).first()
+            if not change_ticket_record:
+                return {'message': 'Change ticket not found'}, 404
 
-            if request_record.status != CHANGE_TICKET_STATUS_WAITING:
-                return {'message': 'Invalid Request Status'}, 400
+            if change_ticket_record.status != CHANGE_TICKET_STATUS_WAITING:
+                return {'message': 'Invalid change ticket Status'}, 400
 
-            request_record.status = CHANGE_TICKET_STATUS_APPROVED
+            change_ticket_record.status = CHANGE_TICKET_STATUS_APPROVED
 
-            schedule_record = Schedule.query.filter_by(schedule_id=request_record.schedule_id).first()
+            schedule_record = Schedule.query.filter_by(schedule_id=change_ticket_record.schedule_id).first()
             if not schedule_record:
                 return {'message': 'Schedule not found'}, 404
 
-            if request_type == CHANGE_TICKET_TYPE_CANCEL:
+            if change_type == CHANGE_TICKET_TYPE_CANCEL:
                 schedule_record.schedule_status = SCHEDULE_CANCELLED
 
-            if request_type == CHANGE_TICKET_TYPE_MODIFY:
+            if change_type == CHANGE_TICKET_TYPE_MODIFY:
                 training_user = TrainingUser.query.filter_by(training_user_id=schedule_record.training_user_id).first()
                 trainer_id = training_user.trainer_id
-                request_time = request_record.request_time
+                request_time = change_ticket_record.request_time
                 if not request_time:
-                    return {'message': 'Request time is missing'}, 400
+                    return {'message': 'Request time of change ticket is missing'}, 400
 
                 conflict_schedule = Trainer.conflict_trainer_schedule(trainer_id, request_time)
 
