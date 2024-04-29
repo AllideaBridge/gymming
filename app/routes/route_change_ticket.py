@@ -1,15 +1,15 @@
 from flask_restx import Namespace, fields, Resource, reqparse
-from sqlalchemy import and_, func, literal_column
-from datetime import datetime
+from sqlalchemy import and_
 
 from app.common.constants import CHANGE_FROM_USER, CHANGE_TICKET_STATUS_WAITING, CHANGE_TICKET_STATUS_REJECTED, \
-    CHANGE_TICKET_TYPE_CANCEL, CHANGE_TICKET_STATUS_APPROVED, SCHEDULE_CANCELLED, CHANGE_TICKET_TYPE_MODIFY, SCHEDULE_MODIFIED, \
+    CHANGE_TICKET_TYPE_CANCEL, CHANGE_TICKET_STATUS_APPROVED, SCHEDULE_CANCELLED, CHANGE_TICKET_TYPE_MODIFY, \
+    SCHEDULE_MODIFIED, \
     SCHEDULE_SCHEDULED, DATETIMEFORMAT
-from app.entities.entity_users import Users
-from app.entities.entity_trainer import Trainer
 from app.entities.entity_change_ticket import ChangeTicket
-from app.entities.entity_training_user import TrainingUser
 from app.entities.entity_schedule import Schedule
+from app.entities.entity_trainer import Trainer
+from app.entities.entity_training_user import TrainingUser
+from app.entities.entity_users import Users
 from database import db
 
 ns_change_ticket = Namespace('change-ticket', description='Change ticket related operations')
@@ -41,11 +41,11 @@ class ChangeTicketResource(Resource):
     @ns_change_ticket.expect(change_ticket_model)
     @ns_change_ticket.doc(description='유저 또는 트레이너가 스케줄 변경 요청시 변경티켓을 생성합니다.',
                           params={'schedule_id': '스케쥴 id',
-                            'change_from': 'USER or TRAINER',
-                            'change_type': 'CANCEL or MODIFY',
-                            'description': '요청 내용',
-                            'request_time': '2024-01-10 12:30:00(%Y-%m-%d %H:%M:%S)'
-                            })
+                                  'change_from': 'USER or TRAINER',
+                                  'change_type': 'CANCEL or MODIFY',
+                                  'description': '요청 내용',
+                                  'request_time': '2024-01-10 12:30:00(%Y-%m-%d %H:%M:%S)'
+                                  })
     def post(self):
         data = ns_change_ticket.payload
         new_change_ticket = ChangeTicket(
@@ -75,9 +75,9 @@ parser.add_argument('status', required=True, action='split',
 class TrainerChangeTicketListResource(Resource):
     @ns_change_ticket.doc(description='트레이너에게 온 요청 리스트를 조회합니다.',
                           params={
-                        'trainer_id': '트레이너 id',
-                        'status': 'WAITING or APPROVED or REJECTED'
-                    })
+                              'trainer_id': '트레이너 id',
+                              'status': 'WAITING or APPROVED or REJECTED'
+                          })
     def get(self):
         args = parser.parse_args()
         trainer_id = args['trainer_id']  # 쿼리 파라미터에서 트레이너 ID 추출
@@ -92,10 +92,12 @@ class TrainerChangeTicketListResource(Resource):
         else:
             return {'message': 'Invalid Change ticket Status'}, 400
 
-        results = db.session.query(Users.user_name, ChangeTicket.change_type, ChangeTicket.request_time, ChangeTicket.created_at,
+        results = db.session.query(Users.user_name, ChangeTicket.change_type, ChangeTicket.request_time,
+                                   ChangeTicket.created_at,
                                    Schedule.schedule_start_time, ChangeTicket.id, ChangeTicket.status) \
-            .join(Schedule, and_(ChangeTicket.schedule_id == Schedule.schedule_id, ChangeTicket.change_from == CHANGE_FROM_USER,
-                                 status_condition)) \
+            .join(Schedule,
+                  and_(ChangeTicket.schedule_id == Schedule.schedule_id, ChangeTicket.change_from == CHANGE_FROM_USER,
+                       status_condition)) \
             .join(TrainingUser, and_(Schedule.training_user_id == TrainingUser.training_user_id,
                                      TrainingUser.trainer_id == trainer_id)) \
             .join(Users, Users.user_id == TrainingUser.user_id) \
@@ -112,8 +114,8 @@ class TrainerChangeTicketListResource(Resource):
 class ChangeTicketDetailsResource(Resource):
     @ns_change_ticket.doc(description='한 요청에 대한 상세 조회를 합니다.',
                           params={
-                        'id': '요청 id'
-                    })
+                              'id': '요청 id'
+                          })
     def get(self, change_ticket_id):
         change_ticket = db.session.query(ChangeTicket.id, ChangeTicket.description) \
             .filter(ChangeTicket.id == change_ticket_id) \
@@ -130,9 +132,9 @@ class ChangeTicketRejectResource(Resource):
     @ns_change_ticket.expect(change_ticket_reject_model)
     @ns_change_ticket.doc(description='요청을 거절 합니다',
                           params={
-                        'id': '요청 id',
-                        'reject_reason': '요청 거절 사유'
-                    })
+                              'id': '요청 id',
+                              'reject_reason': '요청 거절 사유'
+                          })
     def put(self):
         data = ns_change_ticket.payload  # 요청 본문에서 데이터 추출
         change_ticket_id = data.get('id')
@@ -154,9 +156,9 @@ class ChangeTicketApproveResource(Resource):
     @ns_change_ticket.expect(change_ticket_approve_model)
     @ns_change_ticket.doc(description='요청을 승인 합니다.',
                           params={
-                        'id': '요청 id',
-                        'change_type': 'CANCEL or MODIFY'
-                    })
+                              'id': '요청 id',
+                              'change_type': 'CANCEL or MODIFY'
+                          })
     def post(self):
         try:
             data = ns_change_ticket.payload

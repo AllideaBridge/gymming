@@ -3,7 +3,8 @@ from datetime import datetime, timedelta
 
 from app import create_app, Trainer, TrainingUser, Users, Schedule, ChangeTicket
 from app.common.constants import CHANGE_TICKET_TYPE_CANCEL, CHANGE_TICKET_TYPE_MODIFY, CHANGE_TICKET_STATUS_WAITING, \
-    CHANGE_TICKET_STATUS_REJECTED, CHANGE_TICKET_STATUS_APPROVED, SCHEDULE_CANCELLED, SCHEDULE_MODIFIED, SCHEDULE_SCHEDULED
+    CHANGE_TICKET_STATUS_REJECTED, CHANGE_TICKET_STATUS_APPROVED, SCHEDULE_CANCELLED, SCHEDULE_MODIFIED, \
+    SCHEDULE_SCHEDULED
 from database import db
 
 URL_CHANGE_TICKET_APPROVED = '/change-ticket/approve'
@@ -32,7 +33,7 @@ class TrainerScheduleTestCase(unittest.TestCase):
 
         # Users, TrainingUser, Schedule 레코드 추가
         for i in range(1, 4):
-            user = Users(user_name=f'Test User {i}', user_phone_number= f'010-1020-101{i}',
+            user = Users(user_name=f'Test User {i}', user_phone_number=f'010-1020-101{i}',
                          user_email=f'user{i}@example.com', user_login_platform='platform')  # 필드는 Users 모델에 맞게 조정
             db.session.add(user)
             db.session.commit()
@@ -46,14 +47,14 @@ class TrainerScheduleTestCase(unittest.TestCase):
                 db.session.add(schedule)
                 db.session.commit()
                 change_ticket_cancel = ChangeTicket(schedule_id=schedule.schedule_id, change_from='user',
-                                              change_type=CHANGE_TICKET_TYPE_CANCEL,
-                                              description=f'Change ticket cancel description {j}',
-                                              status=CHANGE_TICKET_STATUS_WAITING)
+                                                    change_type=CHANGE_TICKET_TYPE_CANCEL,
+                                                    description=f'Change ticket cancel description {j}',
+                                                    status=CHANGE_TICKET_STATUS_WAITING)
                 db.session.add(change_ticket_cancel)
                 change_ticket_modify = ChangeTicket(schedule_id=schedule.schedule_id, change_from='user',
-                                              change_type=CHANGE_TICKET_TYPE_MODIFY, request_time=datetime.now(),
-                                              description=f'Change ticket modify description {j}',
-                                              status=CHANGE_TICKET_STATUS_WAITING)
+                                                    change_type=CHANGE_TICKET_TYPE_MODIFY, request_time=datetime.now(),
+                                                    description=f'Change ticket modify description {j}',
+                                                    status=CHANGE_TICKET_STATUS_WAITING)
                 db.session.add(change_ticket_modify)
                 db.session.commit()
 
@@ -63,7 +64,8 @@ class TrainerScheduleTestCase(unittest.TestCase):
 
     def test_트레이너_요청_대기_리스트_조회(self):
         trainer_id = 1
-        response = self.client.get(f'/change-ticket/trainer?trainer_id={trainer_id}&status={CHANGE_TICKET_STATUS_WAITING}')
+        response = self.client.get(
+            f'/change-ticket/trainer?trainer_id={trainer_id}&status={CHANGE_TICKET_STATUS_WAITING}')
         self.assertEqual(response.status_code, 200)
         data = response.get_json()
 
@@ -136,7 +138,7 @@ class TrainerScheduleTestCase(unittest.TestCase):
 
     def test_취소_요청이_승인된_경우(self):
         change_ticket = ChangeTicket.query.filter_by(change_type=CHANGE_TICKET_TYPE_CANCEL,
-                                               status=CHANGE_TICKET_STATUS_WAITING).first()
+                                                     status=CHANGE_TICKET_STATUS_WAITING).first()
         change_ticket_id = change_ticket.id
         schedule_id = change_ticket.schedule_id
         body = {
@@ -152,7 +154,7 @@ class TrainerScheduleTestCase(unittest.TestCase):
 
     def test_수정_요청이_승인된_경우(self):
         change_ticket = ChangeTicket.query.filter_by(change_type=CHANGE_TICKET_TYPE_MODIFY,
-                                               status=CHANGE_TICKET_STATUS_WAITING).first()
+                                                     status=CHANGE_TICKET_STATUS_WAITING).first()
         change_ticket_id = change_ticket.id
         schedule_id = change_ticket.schedule_id
         body = {
@@ -171,7 +173,7 @@ class TrainerScheduleTestCase(unittest.TestCase):
 
     def test_요청_상태가_WAITING이_아닌_경우(self):
         change_ticket = ChangeTicket.query.filter_by(change_type=CHANGE_TICKET_TYPE_MODIFY,
-                                               status=CHANGE_TICKET_STATUS_APPROVED).first()
+                                                     status=CHANGE_TICKET_STATUS_APPROVED).first()
         change_ticket_id = change_ticket.id
         body = {
             'change_ticket_id': change_ticket_id,
@@ -183,7 +185,7 @@ class TrainerScheduleTestCase(unittest.TestCase):
 
     def test_요청_시간에_이미_스케쥴이_있는_경우(self):
         change_ticket = ChangeTicket.query.filter_by(change_type=CHANGE_TICKET_TYPE_MODIFY,
-                                               status=CHANGE_TICKET_STATUS_WAITING).first()
+                                                     status=CHANGE_TICKET_STATUS_WAITING).first()
         change_ticket_id = change_ticket.id
         schedule_id = change_ticket.schedule_id
         schedule = Schedule.query.filter_by(schedule_id=schedule_id).first()
