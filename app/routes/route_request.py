@@ -7,7 +7,7 @@ from app.common.constants import REQUEST_FROM_USER, REQUEST_STATUS_WAITING, REQU
     SCHEDULE_SCHEDULED, DATETIMEFORMAT
 from app.entities.entity_users import Users
 from app.entities.entity_trainer import Trainer
-from app.entities.entity_request import Request
+from app.entities.entity_change_ticket import ChangeTicket
 from app.entities.entity_training_user import TrainingUser
 from app.entities.entity_schedule import Schedule
 from database import db
@@ -48,7 +48,7 @@ class RequestResource(Resource):
                             })
     def post(self):
         data = ns_request.payload
-        new_request = Request(
+        new_request = ChangeTicket(
             schedule_id=data['schedule_id'],
             request_from=data['request_from'],
             request_type=data['request_type'],
@@ -80,16 +80,16 @@ class TrainerRequestListResource(Resource):
 
         # 요청 상태에 따른 조건 분기
         if REQUEST_STATUS_WAITING in request_status and len(request_status) == 1:
-            status_condition = Request.request_status == REQUEST_STATUS_WAITING
+            status_condition = ChangeTicket.request_status == REQUEST_STATUS_WAITING
         elif REQUEST_STATUS_APPROVED in request_status and REQUEST_STATUS_REJECTED in request_status and len(
                 request_status) == 2:
-            status_condition = Request.request_status.in_([REQUEST_STATUS_APPROVED, REQUEST_STATUS_REJECTED])
+            status_condition = ChangeTicket.request_status.in_([REQUEST_STATUS_APPROVED, REQUEST_STATUS_REJECTED])
         else:
             return {'message': 'Invalid Request Status'}, 400
 
-        results = db.session.query(Users.user_name, Request.request_type, Request.request_time, Request.created_at,
-                                   Schedule.schedule_start_time, Request.request_id, Request.request_status) \
-            .join(Schedule, and_(Request.schedule_id == Schedule.schedule_id, Request.request_from == REQUEST_FROM_USER,
+        results = db.session.query(Users.user_name, ChangeTicket.request_type, ChangeTicket.request_time, ChangeTicket.created_at,
+                                   Schedule.schedule_start_time, ChangeTicket.id, ChangeTicket.request_status) \
+            .join(Schedule, and_(ChangeTicket.schedule_id == Schedule.schedule_id, ChangeTicket.request_from == REQUEST_FROM_USER,
                                  status_condition)) \
             .join(TrainingUser, and_(Schedule.training_user_id == TrainingUser.training_user_id,
                                      TrainingUser.trainer_id == trainer_id)) \
@@ -110,8 +110,8 @@ class RequestResource(Resource):
                         'request_id': '요청 id'
                     })
     def get(self, request_id):
-        request = db.session.query(Request.request_id, Request.request_description) \
-            .filter(Request.request_id == request_id) \
+        request = db.session.query(ChangeTicket.id, ChangeTicket.request_description) \
+            .filter(ChangeTicket.id == request_id) \
             .first()
 
         if not request:
@@ -133,7 +133,7 @@ class RequestRejectResource(Resource):
         request_id = data.get('request_id')
         request_reject_reason = data.get('request_reject_reason')  # 거절 사유 추출
 
-        request_record = Request.query.filter_by(request_id=request_id).first()
+        request_record = ChangeTicket.query.filter_by(request_id=request_id).first()
         if not request_record:
             return {'message': '요청을 찾을 수 없습니다.'}, 404
 
@@ -161,7 +161,7 @@ class RequestApproveResource(Resource):
             if request_type != REQUEST_TYPE_MODIFY and request_type != REQUEST_TYPE_CANCEL:
                 return {'message': '유효하지 않은 파라미터'}, 400
 
-            request_record = Request.query.filter_by(request_id=request_id).first()
+            request_record = ChangeTicket.query.filter_by(request_id=request_id).first()
             if not request_record:
                 return {'message': 'Request not found'}, 404
 

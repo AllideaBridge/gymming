@@ -11,7 +11,7 @@ from app.routes.route_request import ns_request
 from app.entities.entity_center import Center
 from app.entities.entity_center_pr_image import CenterPrImage
 from app.entities.entity_training_user import TrainingUser
-from app.entities.entity_request import Request
+from app.entities.entity_change_ticket import ChangeTicket
 from app.entities.entity_schedule import Schedule
 from app.entities.entity_trainer import Trainer
 from app.entities.entity_trainer_pr_image import TrainerPrImage
