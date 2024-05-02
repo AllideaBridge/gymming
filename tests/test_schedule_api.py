@@ -1,9 +1,8 @@
 import unittest
 from datetime import datetime, timedelta
-from random import randint
 
-from app import create_app, Users, Schedule, Trainer, Center, TrainingUser
-from app.common.constants import SCHEDULE_CANCELLED, SCHEDULE_SCHEDULED, DATETIMEFORMAT
+from app import create_app, Users, Schedule, Trainer, TrainingUser
+from app.common.constants import SCHEDULE_CANCELLED, SCHEDULE_SCHEDULED, DATETIMEFORMAT, SCHEDULE_MODIFIED
 from database import db
 
 
@@ -78,40 +77,50 @@ class ScheduleTestCase(unittest.TestCase):
         schedule_id = 1
         request_time = datetime.now().strftime(DATETIMEFORMAT)
         body = {
-            'request_time': request_time
+            "id": schedule_id,
+            "start_time": request_time,
+            "status": SCHEDULE_MODIFIED
         }
-        response = self.client.post(f'/schedules/{schedule_id}/change', json=body)
+        response = self.client.put(f'/schedules/{schedule_id}', json=body)
         self.assertEqual(response.status_code, 200)
 
-        old_schedule = Schedule.query.filter_by(schedule_id=schedule_id).first()
-        self.assertEqual(old_schedule.schedule_status, SCHEDULE_CANCELLED)
-
-        new_schedule = Schedule.query.filter_by(schedule_start_time=request_time).first()
-        self.assertEqual(new_schedule.schedule_status, SCHEDULE_SCHEDULED)
+        schedule = Schedule.query.filter_by(schedule_id=schedule_id).first()
+        self.assertEqual(schedule.schedule_status, SCHEDULE_MODIFIED)
+        self.assertEqual(schedule.schedule_start_time.strftime(DATETIMEFORMAT), request_time)
 
     def test_유저_없는_스케쥴_변경(self):
         schedule_id = 0
         request_time = datetime.now().strftime(DATETIMEFORMAT)
         body = {
-            'request_time': request_time
+            "id": schedule_id,
+            "start_time": request_time,
+            "status": SCHEDULE_MODIFIED
         }
-        response = self.client.post(f'/schedules/{schedule_id}/change', json=body)
+        response = self.client.put(f'/schedules/{schedule_id}', json=body)
         self.assertEqual(response.status_code, 404)
 
     def test_유저_스케쥴_취소(self):
         schedule_id = 2
-        response = self.client.post(f'/schedules/{schedule_id}/cancel')
+        schedule = Schedule.query.filter_by(schedule_id=schedule_id).first()
+        body = {
+            "id": schedule_id,
+            "start_time": schedule.schedule_start_time.strftime(DATETIMEFORMAT),
+            "status": SCHEDULE_CANCELLED
+        }
+        response = self.client.put(f'/schedules/{schedule_id}', json=body)
         self.assertEqual(response.status_code, 200)
 
-        old_schedule = Schedule.query.filter_by(schedule_id=schedule_id).first()
-        self.assertEqual(old_schedule.schedule_status, SCHEDULE_CANCELLED)
+        schedule = Schedule.query.filter_by(schedule_id=schedule_id).first()
+        self.assertEqual(schedule.schedule_status, SCHEDULE_CANCELLED)
 
     def test_유저가_이미_있는_스케쥴로_변경하는_경우(self):
         schedule = Schedule.query.filter_by(schedule_status=SCHEDULE_SCHEDULED).first()
         schedule_id = schedule.schedule_id
         request_time = schedule.schedule_start_time.strftime(DATETIMEFORMAT)
         body = {
-            'request_time': request_time
+            "id": schedule_id,
+            "start_time": request_time,
+            "status": SCHEDULE_MODIFIED
         }
-        response = self.client.post(f'/schedules/{schedule_id}/change', json=body)
+        response = self.client.put(f'/schedules/{schedule_id}', json=body)
         self.assertIn('conflict', response.get_json()['message'])
