@@ -1,10 +1,11 @@
 from calendar import monthrange
 from datetime import datetime
 
-from app.common.constants import DATEFORMAT
+from app.common.constants import DATEFORMAT, SCHEDULE_MODIFIED, SCHEDULE_CANCELLED
 from app.common.exceptions import BadRequestError
 from app.repositories.repository_schedule import ScheduleRepository
 from app.repositories.repository_trainer_availability import TrainerAvailabilityRepository
+from app.repositories.repository_training_user import TrainingUserRepository
 
 
 class ScheduleService:
@@ -12,6 +13,7 @@ class ScheduleService:
     def __init__(self):
         self.schedule_repository = ScheduleRepository()
         self.trainer_availability_repository = TrainerAvailabilityRepository()
+        self.training_user_repository = TrainingUserRepository()
 
     def handle_request(self, params):
         if params['training_user_id']:
@@ -81,3 +83,41 @@ class ScheduleService:
 
         # "근무 가능 날짜" 목록에서 조건을 충족하는 날짜를 제외한 결과 반환
         return sorted(list(available_dates))
+
+    def handle_schedule(self, schedule_id, start_time, status):
+        if status == SCHEDULE_MODIFIED:
+            return self._change_schedule(schedule_id, start_time)
+        return self._cancel_schedule(schedule_id)
+
+    def _change_schedule(self, schedule_id, start_time):
+        schedule = self.schedule_repository.select_schedule_by_id(schedule_id)
+        if not schedule:
+            return {'error': 'Schedule not found'}, 404
+
+        training_user = self.training_user_repository.select_by_id(schedule.training_user_id)
+        trainer_id = training_user.trainer_id
+
+        conflict_schedule = self.schedule_repository.select_conflict_trainer_schedule_by_time(trainer_id, start_time)
+
+        if conflict_schedule:
+            # 충돌하는 스케줄이 있는 경우
+            return {'message': 'New schedule conflicts with existing schedules of the trainer'}, 400
+
+        schedule.schedule_status = SCHEDULE_MODIFIED
+        schedule.schedule_start_time = start_time
+        self.schedule_repository.insert_schedule(schedule)
+
+        return {'message': 'Schedule updated successfully'}, 200
+
+    def _cancel_schedule(self, schedule_id):
+        schedule = self.schedule_repository.select_schedule_by_id(schedule_id)
+
+        if not schedule:
+            return {'error': 'Schedule not found'}, 404
+
+        schedule.schedule_status = SCHEDULE_CANCELLED
+        self.schedule_repository.insert_schedule(schedule)
+        return {'message': 'Schedule cancel successfully'}, 200
+
+
+
