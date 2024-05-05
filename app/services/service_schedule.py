@@ -119,5 +119,8 @@ class ScheduleService:
         self.schedule_repository.insert_schedule(schedule)
         return {'message': 'Schedule cancel successfully'}, 200
 
-
-
+    def delete_schedule(self, schedule_id):
+        deleted = self.schedule_repository.delete_schedule(schedule_id)
+        if deleted:
+            return {"message": "Schedule deleted successfully."}, 200
+        return {"message": "Schedule not found."}, 404

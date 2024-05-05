@@ -110,6 +110,14 @@ class ScheduleRepository:
         db.session.add(schedule)
         db.session.commit()
 
+    def delete_schedule(self, schedule_id):
+        schedule = Schedule.query.filter_by(schedule_id=schedule_id).first()
+        if schedule:
+            schedule.schedule_delete_flag = True
+            db.session.commit()
+            return True
+        return False
+
 
 '''
     Repository Naming Rule
