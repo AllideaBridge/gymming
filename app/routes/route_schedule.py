@@ -1,14 +1,11 @@
 import http
-import logging
 from datetime import datetime, date
 
 from flask import request
 from flask_restx import Namespace, Resource, fields
-from app.common.constants import SCHEDULE_CANCELLED, SCHEDULE_SCHEDULED, DATETIMEFORMAT
-from app.common.exceptions import BadRequestError
+from app.common.constants import DATETIMEFORMAT
 from app.entities.entity_users import Users
 from app.entities.entity_trainer import Trainer
-from app.entities.entity_center import Center
 from app.entities.entity_training_user import TrainingUser
 from app.entities.entity_trainer_availability import TrainerAvailability
 from app.entities.entity_schedule import Schedule
@@ -41,6 +38,8 @@ class Schedule(Resource):
     def put(self, schedule_id):
         start_time = datetime.strptime(request.json['start_time'], DATETIMEFORMAT)
         status = request.json['status']
+
+        return self.schedule_service.handle_schedule(schedule_id, start_time, status)
 
     def delete(self, schedule_id):
         pass
@@ -113,77 +112,77 @@ schedule_change_model = ns_schedule.model('ScheduleChangeModel', {
 
 # todo: 스케쥴 조회시 스케쥴 상태 조건 추가
 
-@ns_schedule.route('/<int:schedule_id>/change')
-class ScheduleChangeResource(Resource):
-    @ns_schedule.expect(schedule_change_model)
-    @ns_schedule.doc(description='스케쥴 변경 가능 기간인 경우 스케쥴 변경 api',
-                     params={
-                         'schedule_id': '스케쥴 id',
-                         'request_time': '2024-01-10 12:30:00(%Y-%m-%d %H:%M:%S)'
-                     })
-    def post(self, schedule_id):
-        body = ns_schedule.payload
-        request_time_str = body['request_time']
+# @ns_schedule.route('/<int:schedule_id>/change')
+# class ScheduleChangeResource(Resource):
+#     @ns_schedule.expect(schedule_change_model)
+#     @ns_schedule.doc(description='스케쥴 변경 가능 기간인 경우 스케쥴 변경 api',
+#                      params={
+#                          'schedule_id': '스케쥴 id',
+#                          'request_time': '2024-01-10 12:30:00(%Y-%m-%d %H:%M:%S)'
+#                      })
+#     def post(self, schedule_id):
+#         body = ns_schedule.payload
+#         request_time_str = body['request_time']
+#
+#         try:
+#             request_time = datetime.strptime(request_time_str, DATETIMEFORMAT)
+#         except ValueError as e:
+#             logging.log(logging.ERROR, e)
+#             return {'error': 'Invalid date format'}, 400
+#
+#         try:
+#             # 트랜잭션 시작
+#             with db.session.begin_nested():
+#                 # 스케줄 상태 업데이트
+#                 schedule = Schedule.find_by_id(schedule_id)
+#                 if not schedule:
+#                     return {'error': 'Schedule not found'}, 404
+#
+#                 training_user = TrainingUser.find_by_id(schedule.training_user_id)
+#                 trainer_id = training_user.trainer_id
+#
+#                 conflict_schedule = Trainer.conflict_trainer_schedule(trainer_id, request_time)
+#
+#                 if conflict_schedule:
+#                     # 충돌하는 스케줄이 있는 경우
+#                     return {'message': 'New schedule conflicts with existing schedules of the trainer'}, 400
+#
+#
+#                 schedule.schedule_status = SCHEDULE_MODIFIED
+#                 db.session.add(schedule)
+#
+#                 new_schedule = Schedule(
+#                     training_user_id=schedule.training_user_id,
+#                     schedule_start_time=request_time,
+#                     schedule_status=SCHEDULE_SCHEDULED  # 새 스케줄의 상태를 'scheduled'로 설정
+#                 )
+#                 db.session.add(new_schedule)
+#
+#                 # 트랜잭션 커밋
+#                 db.session.commit()
+#
+#             return {'message': 'Schedule updated successfully'}, 200
+#         except Exception as e:
+#             db.session.rollback()
+#             logging.log(logging.ERROR, str(e))
+#             return {'error': str(e)}, 500
 
-        try:
-            request_time = datetime.strptime(request_time_str, DATETIMEFORMAT)
-        except ValueError as e:
-            logging.log(logging.ERROR, e)
-            return {'error': 'Invalid date format'}, 400
 
-        try:
-            # 트랜잭션 시작
-            with db.session.begin_nested():
-                # 스케줄 상태 업데이트
-                schedule = Schedule.find_by_id(schedule_id)
-                if not schedule:
-                    return {'error': 'Schedule not found'}, 404
-
-                training_user = TrainingUser.find_by_id(schedule.training_user_id)
-                trainer_id = training_user.trainer_id
-
-                conflict_schedule = Trainer.conflict_trainer_schedule(trainer_id, request_time)
-
-                if conflict_schedule:
-                    # 충돌하는 스케줄이 있는 경우
-                    return {'message': 'New schedule conflicts with existing schedules of the trainer'}, 400
-
-                # todo : modified로 바꾸기
-                schedule.schedule_status = SCHEDULE_CANCELLED
-                db.session.add(schedule)
-
-                new_schedule = Schedule(
-                    training_user_id=schedule.training_user_id,
-                    schedule_start_time=request_time,
-                    schedule_status=SCHEDULE_SCHEDULED  # 새 스케줄의 상태를 'scheduled'로 설정
-                )
-                db.session.add(new_schedule)
-
-                # 트랜잭션 커밋
-                db.session.commit()
-
-            return {'message': 'Schedule updated successfully'}, 200
-        except Exception as e:
-            db.session.rollback()
-            logging.log(logging.ERROR, str(e))
-            return {'error': str(e)}, 500
-
-
-@ns_schedule.route('/<int:schedule_id>/cancel')
-class ScheduleCancelResource(Resource):
-    @ns_schedule.doc(description='스케쥴 변경 가능 기간인 경우 스케쥴 취소 api',
-                     params={
-                         'schedule_id': '스케쥴 id',
-                     })
-    def post(self, schedule_id):
-        schedule = Schedule.query.filter_by(schedule_id=schedule_id).first()
-        if not schedule:
-            return {'error': 'Schedule not found'}, 404
-
-        schedule.schedule_status = SCHEDULE_CANCELLED
-        db.session.add(schedule)
-        db.session.commit()
-        return {'message': 'Schedule cancel successfully'}, 200
+# @ns_schedule.route('/<int:schedule_id>/cancel')
+# class ScheduleCancelResource(Resource):
+#     @ns_schedule.doc(description='스케쥴 변경 가능 기간인 경우 스케쥴 취소 api',
+#                      params={
+#                          'schedule_id': '스케쥴 id',
+#                      })
+#     def post(self, schedule_id):
+#         schedule = Schedule.query.filter_by(schedule_id=schedule_id).first()
+#         if not schedule:
+#             return {'error': 'Schedule not found'}, 404
+#
+#         schedule.schedule_status = SCHEDULE_CANCELLED
+#         db.session.add(schedule)
+#         db.session.commit()
+#         return {'message': 'Schedule cancel successfully'}, 200
 
 
 # 입력 받은 year, month중 트레이너의 근무 스케쥴이 꽉 차지 않은 날짜 배열을 리턴한다.

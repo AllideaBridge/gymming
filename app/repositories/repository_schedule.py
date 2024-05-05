@@ -90,6 +90,26 @@ class ScheduleRepository:
 
         return full_dates
 
+    def select_conflict_trainer_schedule_by_time(self, trainer_id, start_time):
+        schedule = db.session.query(Schedule). \
+            join(TrainingUser, and_(TrainingUser.training_user_id == Schedule.training_user_id,
+                                    Schedule.schedule_status == SCHEDULE_SCHEDULED)). \
+            join(Trainer, and_(Trainer.trainer_id == TrainingUser.trainer_id,
+                               Trainer.trainer_id == trainer_id)). \
+            filter(func.abs(func.timestampdiff(literal_column('MINUTE'), Schedule.schedule_start_time,
+                                               start_time)) < Trainer.lesson_minutes). \
+            first()
+
+        return schedule
+
+    def select_schedule_by_id(self, schedule_id):
+        schedule = Schedule.query.filter_by(schedule_id=schedule_id).first()
+        return schedule
+
+    def insert_schedule(self, schedule):
+        db.session.add(schedule)
+        db.session.commit()
+
 
 '''
     Repository Naming Rule
