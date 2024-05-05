@@ -59,23 +59,23 @@ class ScheduleTestCase(unittest.TestCase):
         db.session.remove()
 
     def test_유저_한달_스케쥴_있는_날짜_조회(self):
-        response = self.client.get('/schedules/1/2024/1')  # 2024년 1월의 스케줄을 요청
+        response = self.client.get('/schedules/user/1?date=2024-01-01&type=month')  # 2024년 1월의 스케줄을 요청
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.get_json()['dates'],
+        self.assertEqual(response.get_json()['result'],
                          ['2024-01-16', '2024-01-17', '2024-01-18', '2024-01-19', '2024-01-20', '2024-01-21',
                           '2024-01-22', '2024-01-23', '2024-01-24', '2024-01-25', '2024-01-26',
                           '2024-01-27', '2024-01-28', '2024-01-29', '2024-01-30', '2024-01-31'])
         print(response.get_json())
 
     def test_유저_하루_스케쥴_조회(self):
-        response = self.client.get('/schedules/1/2024/1/21')
-        self.assertEqual(len(response.get_json()), 6)
+        response = self.client.get('/schedules/user/1?date=2024-01-21&type=day')
         print(response.get_json())
+        self.assertEqual(len(response.get_json()['result']), 6)
         self.assertEqual(response.status_code, 200)
 
     def test_유저_스케쥴_변경(self):
         schedule_id = 1
-        request_time = datetime.now().strftime(DATETIMEFORMAT)
+        request_time = "2024-01-16 17:31:13"
         body = {
             "id": schedule_id,
             "start_time": request_time,

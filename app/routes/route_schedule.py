@@ -39,7 +39,7 @@ class Schedule(Resource):
         start_time = datetime.strptime(request.json['start_time'], DATETIMEFORMAT)
         status = request.json['status']
 
-        return self.schedule_service.handle_schedule(schedule_id, start_time, status)
+        return self.schedule_service.handle_change_user_schedule(schedule_id, start_time, status)
 
     def delete(self, schedule_id):
         return self.schedule_service.delete_schedule(schedule_id)
@@ -47,9 +47,15 @@ class Schedule(Resource):
 
 @ns_schedule.route('/user/<int:user_id>')
 class UserSchedule(Resource):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.schedule_service = ScheduleService()
 
     def get(self, user_id):
-        pass
+        date_str = request.args.get('date')
+        schedule_type = request.args.get('type').upper()
+
+        return self.schedule_service.handle_get_user_schedule(user_id, date_str, schedule_type)
 
 
 @ns_schedule.route('/trainer/<int:trainer_id>')
@@ -64,44 +70,43 @@ class TrainerAssignedUserSchedule(Resource):
         pass
 
 
-# 회원의 한달 중 스케쥴이 있는 날짜 조회.
-@ns_schedule.route('/<int:user_id>/<int:year>/<int:month>')
-class UserMonthScheduleList(Resource):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.schedule_service = ScheduleService()
+# # 회원의 한달 중 스케쥴이 있는 날짜 조회.
+# @ns_schedule.route('/<int:user_id>/<int:year>/<int:month>')
+# class UserMonthScheduleList(Resource):
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args, **kwargs)
+#         self.schedule_service = ScheduleService()
+#
+#     @ns_schedule.doc(description='회원의 한달 중 스케쥴이 있는 날짜를 조회합니다.',
+#                      params={
+#                          'user_id': '유저 id',
+#                          'year': '년도',
+#                          'month': '월'
+#                      })
+#     def get(self, user_id, year, month):
+#         scheduled_dates = self.schedule_service.get_user_month_schedule_date(user_id, year, month)
+#
+#         return {'dates': scheduled_dates}
 
-    @ns_schedule.doc(description='회원의 한달 중 스케쥴이 있는 날짜를 조회합니다.',
-                     params={
-                         'user_id': '유저 id',
-                         'year': '년도',
-                         'month': '월'
-                     })
-    def get(self, user_id, year, month):
-        scheduled_dates = self.schedule_service.get_user_month_schedule_date(user_id, year, month)
 
-        return {'dates': scheduled_dates}
-
-
-# todo : lesson_minutes 추가하기. 스케쥴 endtime을 계산하기 위함.
-@ns_schedule.route('/<int:user_id>/<int:year>/<int:month>/<int:day>')
-class UserDayScheduleList(Resource):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.schedule_service = ScheduleService()
-
-    @ns_schedule.marshal_with(user_schedule_model)
-    @ns_schedule.doc(description='회원의 해당 날의 스케쥴 리스트 조회.',
-                     params={
-                         'user_id': '유저 id',
-                         'year': '년도',
-                         'month': '월',
-                         'day': '일'
-                     })
-    def get(self, user_id, year, month, day):
-        schedules = self.schedule_service.get_user_day_schedule(user_id, year, month, day)
-
-        return schedules
+# @ns_schedule.route('/<int:user_id>/<int:year>/<int:month>/<int:day>')
+# class UserDayScheduleList(Resource):
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args, **kwargs)
+#         self.schedule_service = ScheduleService()
+#
+#     @ns_schedule.marshal_with(user_schedule_model)
+#     @ns_schedule.doc(description='회원의 해당 날의 스케쥴 리스트 조회.',
+#                      params={
+#                          'user_id': '유저 id',
+#                          'year': '년도',
+#                          'month': '월',
+#                          'day': '일'
+#                      })
+#     def get(self, user_id, year, month, day):
+#         schedules = self.schedule_service.get_user_day_schedule(user_id, year, month, day)
+#
+#         return schedules
 
 
 schedule_change_model = ns_schedule.model('ScheduleChangeModel', {

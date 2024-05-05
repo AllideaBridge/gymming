@@ -1,7 +1,8 @@
 from calendar import monthrange
 from datetime import datetime
 
-from app.common.constants import DATEFORMAT, SCHEDULE_MODIFIED, SCHEDULE_CANCELLED
+from app.common.constants import DATEFORMAT, SCHEDULE_MODIFIED, SCHEDULE_CANCELLED, SCHEDULE_TYPE_MONTH, \
+    SCHEDULE_TYPE_DAY
 from app.common.exceptions import BadRequestError
 from app.repositories.repository_schedule import ScheduleRepository
 from app.repositories.repository_trainer_availability import TrainerAvailabilityRepository
@@ -47,14 +48,44 @@ class ScheduleService:
             ]
         }
 
+    def handle_get_user_schedule(self, user_id, date_str, schedule_type):
+        date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+
+        year = date_obj.year
+        month = date_obj.month
+        day = date_obj.day
+
+        if schedule_type == SCHEDULE_TYPE_MONTH:
+            return self.get_user_month_schedule_date(user_id, year, month)
+
+        if schedule_type == SCHEDULE_TYPE_DAY:
+            return self.get_user_day_schedule(user_id, year, month, day)
+
+        raise BadRequestError
+
     def get_user_month_schedule_date(self, user_id, year, month):
         schedules = self.schedule_repository.select_month_schedule_time_by_user_id(user_id, year, month)
-        scheduled_dates = [schedule[0].strftime(DATEFORMAT) for schedule in schedules]
-        return sorted(scheduled_dates)
+        scheduled_dates = [schedule[0].strftime(DATEFORMAT) for schedule in schedules] if schedules else []
+        return {"result": scheduled_dates}
 
     def get_user_day_schedule(self, user_id, year, month, day):
-        schedules = self.schedule_repository.select_day_schedule_by_user_id(user_id, year, month, day)
-        return schedules
+        results = self.schedule_repository.select_day_schedule_by_user_id(user_id, year, month, day)
+
+        data = []
+        for row in results:
+            item = {
+                "schedule_id": row.schedule_id,
+                "schedule_start_time": row.schedule_start_time.strftime(DATEFORMAT),
+                "lesson_name": row.lesson_name,
+                "trainer_name": row.trainer_name,
+                "center_name": row.center_name,
+                "center_location": row.center_location,
+                "lesson_change_range": row.lesson_change_range,
+                "lesson_minutes": row.lesson_minutes
+            }
+            data.append(item)
+
+        return {"result": data}
 
     # todo : ScheduleChangeResource
     # todo : ScheduleCancelResource
@@ -84,7 +115,7 @@ class ScheduleService:
         # "근무 가능 날짜" 목록에서 조건을 충족하는 날짜를 제외한 결과 반환
         return sorted(list(available_dates))
 
-    def handle_schedule(self, schedule_id, start_time, status):
+    def handle_change_user_schedule(self, schedule_id, start_time, status):
         if status == SCHEDULE_MODIFIED:
             return self._change_schedule(schedule_id, start_time)
         return self._cancel_schedule(schedule_id)
