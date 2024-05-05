@@ -42,7 +42,7 @@ class Schedule(Resource):
         return self.schedule_service.handle_schedule(schedule_id, start_time, status)
 
     def delete(self, schedule_id):
-        pass
+        return self.schedule_service.delete_schedule(schedule_id)
 
 
 @ns_schedule.route('/user/<int:user_id>')
