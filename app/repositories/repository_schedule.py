@@ -29,28 +29,33 @@ class ScheduleRepository:
         return schedules
 
     def select_month_schedule_time_by_user_id(self, user_id, year, month):
-        schedules = db.session.query(func.distinct(func.date(Schedule.schedule_start_time))).join(TrainingUser).filter(
+        schedules = (db.session.query(func.distinct(func.date(Schedule.schedule_start_time))).join(TrainingUser).filter(
             TrainingUser.user_id == user_id,
             db.extract('year', Schedule.schedule_start_time) == year,
-            db.extract('month', Schedule.schedule_start_time) == month).all()
+            db.extract('month', Schedule.schedule_start_time) == month)
+                     .order_by(func.date(Schedule.schedule_start_time).asc())
+                     .all())
         return schedules
 
     def select_day_schedule_by_user_id(self, user_id, year, month, day):
-        schedules = db.session.query(
+        schedules = (db.session.query(
+            Schedule.schedule_id,
+            Schedule.schedule_start_time,
             Trainer.trainer_name,
             coalesce(Trainer.lesson_name, '').label('lesson_name'),
             coalesce(Center.center_name, '').label('center_name'),
             coalesce(Center.center_location, '').label('center_location'),
-            Schedule.schedule_start_time,
-            Schedule.schedule_id
-        ).join(TrainingUser, TrainingUser.training_user_id == Schedule.training_user_id) \
-            .join(Trainer, TrainingUser.trainer_id == Trainer.trainer_id) \
-            .outerjoin(Center, Trainer.center_id == Center.center_id) \
-            .filter(TrainingUser.user_id == user_id,
-                    func.year(Schedule.schedule_start_time) == year,
-                    func.month(Schedule.schedule_start_time) == month,
-                    func.day(Schedule.schedule_start_time) == day) \
-            .all()
+            Trainer.lesson_change_range,
+            Trainer.lesson_minutes
+        )
+                     .join(TrainingUser, TrainingUser.training_user_id == Schedule.training_user_id)
+                     .join(Trainer, TrainingUser.trainer_id == Trainer.trainer_id)
+                     .outerjoin(Center, Trainer.center_id == Center.center_id)
+                     .filter(TrainingUser.user_id == user_id,
+                             func.year(Schedule.schedule_start_time) == year,
+                             func.month(Schedule.schedule_start_time) == month,
+                             func.day(Schedule.schedule_start_time) == day)
+                     .all())
 
         return schedules
 
