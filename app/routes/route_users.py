@@ -12,7 +12,6 @@ user_model = ns_user.model('Users', {
     'user_phone_number': fields.String(description='User phone number'),
     'user_profile_img_url': fields.String(description='User profile image URL'),
     'user_delete_flag': fields.Boolean(default=False, description='User delete flag'),
-    'user_login_platform': fields.String(required=True, description='User login platform'),
     'user_birthday': fields.String(required=True, description='User BirthDay')
 })
 
