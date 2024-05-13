@@ -18,7 +18,6 @@ class UserService:
             user_phone_number=data.get('user_phone_number'),
             user_profile_img_url=data.get('user_profile_img_url'),
             user_delete_flag=data.get('user_delete_flag', False),
-            user_login_platform=data['user_login_platform']
         )
         user_repository.insert(new_user)
         return new_user
