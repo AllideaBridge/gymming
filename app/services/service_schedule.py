@@ -1,12 +1,13 @@
 from calendar import monthrange
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from app.common.constants import DATEFORMAT, SCHEDULE_MODIFIED, SCHEDULE_CANCELLED, SCHEDULE_TYPE_MONTH, \
-    SCHEDULE_TYPE_DAY
+    SCHEDULE_TYPE_DAY, SCHEDULE_TYPE_WEEK
 from app.common.exceptions import BadRequestError
 from app.repositories.repository_schedule import ScheduleRepository
 from app.repositories.repository_trainer_availability import TrainerAvailabilityRepository
 from app.repositories.repository_training_user import TrainingUserRepository
+from app.repositories.repository_trainer import TrainerRepository
 
 
 class ScheduleService:
@@ -15,6 +16,7 @@ class ScheduleService:
         self.schedule_repository = ScheduleRepository()
         self.trainer_availability_repository = TrainerAvailabilityRepository()
         self.training_user_repository = TrainingUserRepository()
+        self.trainer_repository = TrainerRepository()
 
     def handle_request(self, params):
         if params['training_user_id']:
@@ -90,31 +92,6 @@ class ScheduleService:
     # todo : ScheduleChangeResource
     # todo : ScheduleCancelResource
 
-    def get_available_trainer_month_schedule(self, trainer_id, year, month):
-        # 1단계: 트레이너의 전체 가능 요일 조회
-        available_week_days = self.trainer_availability_repository.select_week_day_by_trainer_id(trainer_id)
-
-        if not available_week_days:
-            return []
-
-        available_week_days = set([week_day for week_day, in available_week_days])
-
-        # 2단계: 해당 월의 모든 날짜를 순회하며 "근무 가능 날짜" 목록 생성
-        available_dates = set()
-        num_days = monthrange(year, month)[1]
-        for day in range(1, num_days + 1):
-            date = datetime(year, month, day)
-            if date.weekday() in available_week_days:
-                available_dates.add(date.strftime(DATEFORMAT))
-
-        # 3단계: 조건을 충족 하는 날짜 조회 및 "근무 가능 날짜"에서 제외
-        full_dates = self.schedule_repository.select_full_date_by_trainer_id_and_year_month(trainer_id, year, month)
-        for date, in full_dates:
-            available_dates.discard(date.strftime(DATEFORMAT))
-
-        # "근무 가능 날짜" 목록에서 조건을 충족하는 날짜를 제외한 결과 반환
-        return sorted(list(available_dates))
-
     def handle_change_user_schedule(self, schedule_id, start_time, status):
         if status == SCHEDULE_MODIFIED:
             return self._change_schedule(schedule_id, start_time)
@@ -155,3 +132,100 @@ class ScheduleService:
         if deleted:
             return {"message": "Schedule deleted successfully."}, 200
         return {"message": "Schedule not found."}, 404
+
+    def handle_get_trainer_schedule(self, trainer_id, date, type):
+        if type == SCHEDULE_TYPE_DAY:
+            return self.get_trainer_day_schedule(trainer_id, date)
+
+        if type == SCHEDULE_TYPE_WEEK:
+            return self.get_trainer_week_schedule(trainer_id, date)
+
+        if type == SCHEDULE_TYPE_MONTH:
+            return self.get_trainer_month_schedule(trainer_id, date)
+
+        raise BadRequestError
+
+    def get_trainer_month_schedule(self, trainer_id, date):
+        year = date.year
+        month = date.month
+
+        # 1단계: 트레이너의 전체 가능 요일 조회
+        available_week_days = self.trainer_availability_repository.select_week_day_by_trainer_id(trainer_id)
+
+        if not available_week_days:
+            return []
+
+        available_week_days = set([week_day for week_day, in available_week_days])
+
+        # 2단계: 해당 월의 모든 날짜를 순회하며 "근무 가능 날짜" 목록 생성
+        available_dates = set()
+        num_days = monthrange(year, month)[1]
+        for day in range(1, num_days + 1):
+            candidate_date = datetime(year, month, day)
+            if candidate_date.weekday() in available_week_days:
+                available_dates.add(candidate_date.strftime(DATEFORMAT))
+
+        # 3단계: 조건을 충족 하는 날짜 조회 및 "근무 가능 날짜"에서 제외
+        full_dates = self.schedule_repository.select_full_date_by_trainer_id_and_year_month(trainer_id, year, month)
+        for full_date, in full_dates:
+            available_dates.discard(full_date.strftime(DATEFORMAT))
+
+        # "근무 가능 날짜" 목록에서 조건을 충족하는 날짜를 제외한 결과 반환
+        return {
+            'result': sorted(list(available_dates))
+        }
+
+    def get_trainer_week_schedule(self, trainer_id, date):
+        start_date = date
+        end_date = date + timedelta(days=6)
+
+        schedules = self.schedule_repository.select_week_schedule_by_trainer_id(trainer_id, start_date, end_date)
+        trainer = self.trainer_repository.select_trainer_by_id(trainer_id)
+
+        result = {
+            'result': [
+                {
+                    'user_id': s.user_id,
+                    'user_name': s.user_name,
+                    'schedule_start_time': s.schedule_start_time.strftime('%Y-%m-%d %H:%M:%S')
+                } for s in schedules
+            ],
+            'lesson_minute': trainer.lesson_minutes
+        }
+
+        return result
+
+    def get_trainer_day_schedule(self, trainer_id, date):
+        trainer_details = self.trainer_repository.select_trainer_details_by_id_and_date(trainer_id, date)
+
+        if not trainer_details:
+            return {'result': []}
+
+        start_dt = datetime.combine(date, trainer_details.start_time)
+        end_dt = datetime.combine(date, trainer_details.end_time)
+
+        time_slots = []
+        current_time = start_dt
+
+        while current_time + timedelta(minutes=30) <= end_dt:
+            time_slots.append(current_time)
+            current_time += timedelta(minutes=30)
+
+        schedules = self.schedule_repository.select_day_schedule_by_trainer_id(trainer_id=trainer_id, date=date)
+
+        scheduled_times = [
+            (s.schedule_start_time, s.schedule_start_time + timedelta(minutes=trainer_details.lesson_minutes))
+            for s in schedules
+        ]
+
+        result = []
+        for slot in time_slots:
+            is_available = not any(
+                s[0] <= slot < s[1] for s in scheduled_times
+            )
+            result.append({
+                'time': slot.strftime('%H:%M'),
+                'possible': is_available
+            })
+
+        return {'result': result}
