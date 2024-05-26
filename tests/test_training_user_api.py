@@ -100,8 +100,9 @@ class TrainerUserTestCase(unittest.TestCase):
         db.session.commit()
 
         response = self.client.get(
-            f'/trainer/training-user/month-schedules?training_user_id={training_user.training_user_id}&year={2024}&month={1}')
-        data = response.get_json()["schedules"]
+            f'/schedules/trainer/{training_user.trainer_id}/users/{training_user.user_id}?date=2024-01-01&type=month')
+        print(response.get_json())
+        data = response.get_json()["result"]
         self.assertEqual(len(data), len(schedules))
         for schedule in schedules:
             response = self.client.get(f'/trainer/training-user/schedule/{schedule.schedule_id}')

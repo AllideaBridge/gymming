@@ -1,9 +1,10 @@
 import http
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 
 from flask import request
 from flask_restx import Namespace, Resource, fields
-from app.common.constants import DATETIMEFORMAT
+from app.common.constants import DATETIMEFORMAT, DATEFORMAT
+from app.common.exceptions import BadRequestError
 from app.entities.entity_users import Users
 from app.entities.entity_trainer import Trainer
 from app.entities.entity_training_user import TrainingUser
@@ -27,7 +28,7 @@ user_schedule_model = ns_schedule.model('UserSchedule', {
 
 
 @ns_schedule.route('/<int:schedule_id>')
-class Schedule(Resource):
+class ScheduleResource(Resource):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.schedule_service = ScheduleService()
@@ -60,14 +61,31 @@ class UserSchedule(Resource):
 
 @ns_schedule.route('/trainer/<int:trainer_id>')
 class TrainerSchedule(Resource):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.schedule_service = ScheduleService()
+
     def get(self, trainer_id):
-        pass
+        date_str = request.args.get('date')
+        schedule_date = datetime.strptime(date_str, DATEFORMAT).date()
+        schedule_type = request.args.get('type').upper()
+        return self.schedule_service.handle_get_trainer_schedule(trainer_id=trainer_id, date=schedule_date,
+                                                                 type=schedule_type)
 
 
 @ns_schedule.route('/trainer/<int:trainer_id>/users/<int:user_id>')
 class TrainerAssignedUserSchedule(Resource):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.schedule_service = ScheduleService()
+
     def get(self, trainer_id, user_id):
-        pass
+        date_str = request.args.get('date')
+        schedule_date = datetime.strptime(date_str, DATEFORMAT).date()
+        query_type = request.args.get('type').upper()
+
+        result = self.schedule_service.get_training_user_schedule(trainer_id, user_id, schedule_date, query_type)
+        return {"result": result}
 
 
 # # 회원의 한달 중 스케쥴이 있는 날짜 조회.
@@ -206,67 +224,6 @@ class TrainerMonthSchedule(Resource):
     def get(self, trainer_id, year, month):
         available_dates = self.schedule_service.get_available_trainer_month_schedule(trainer_id, year, month)
         return available_dates
-
-
-@ns_schedule.route('/trainer/<int:trainer_id>/<int:year>/<int:month>/<int:day>')
-class TrainerDaySchedule(Resource):
-    @ns_schedule.doc(description='트레이너의 하루 스케쥴 리스트를 리턴한다.',
-                     params={
-                         'trainer_id': '트레이너 id',
-                         'year': '년',
-                         'month': '월',
-                         'day': '일'
-                     })
-    def get(self, trainer_id, year, month, day):
-        date_filter = date(year, month, day)
-
-        trainer_details = db.session.query(
-            Trainer.lesson_minutes,
-            Trainer.lesson_change_range,
-            TrainerAvailability.start_time,
-            TrainerAvailability.end_time,
-        ) \
-            .join(TrainerAvailability, (TrainerAvailability.trainer_id == Trainer.trainer_id) \
-                  & (TrainerAvailability.week_day == date_filter.weekday())) \
-            .filter(Trainer.trainer_id == trainer_id,
-                    Trainer.trainer_delete_flag == False) \
-            .first()  # 가정: 모든 스케줄에 대해 lesson_minutes와 availability_start_time는 동일
-
-        if trainer_details:
-            formatted_start_time = trainer_details.start_time.strftime(
-                "%H:%M") if trainer_details.start_time else None
-            formatted_end_time = trainer_details.end_time.strftime(
-                "%H:%M") if trainer_details.end_time else None
-
-            result = {
-                'lesson_minutes': trainer_details.lesson_minutes,
-                'lesson_change_range': trainer_details.lesson_change_range,
-                'availability_start_time': formatted_start_time,
-                'availability_end_time': formatted_end_time
-            }
-        else:
-            result = {}
-
-        schedules = db.session.query(
-            Schedule.schedule_id,
-            Schedule.schedule_start_time
-        ) \
-            .join(TrainingUser, (TrainingUser.training_user_id == Schedule.training_user_id) \
-                  & (TrainingUser.training_user_delete_flag == False) \
-                  & (Schedule.schedule_delete_flag == False) \
-                  & (db.func.date(Schedule.schedule_start_time) == date_filter)) \
-            .join(Trainer, (Trainer.trainer_id == TrainingUser.trainer_id) \
-                  & (Trainer.trainer_id == trainer_id) \
-                  & (Trainer.trainer_delete_flag == False)) \
-            .all()
-
-        # todo : 스케쥴 정렬 조건 추가하기.
-        result['schedules'] = [{
-            'schedule_id': schedule.schedule_id,
-            'schedule_start_time': schedule.schedule_start_time.strftime(DATETIMEFORMAT)
-        } for schedule in schedules]
-
-        return result
 
 
 # todo: 스케쥴 조회시 스케쥴 상태 조건 추가

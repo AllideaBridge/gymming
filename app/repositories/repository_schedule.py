@@ -9,6 +9,7 @@ from app.entities.entity_trainer import Trainer
 from app.entities.entity_center import Center
 from app.entities.entity_training_user import TrainingUser
 from app.entities.entity_schedule import Schedule
+from app.entities.entity_users import Users
 from database import db
 
 
@@ -40,6 +41,7 @@ class ScheduleRepository:
     def select_day_schedule_by_user_id(self, user_id, year, month, day):
         schedules = (db.session.query(
             Schedule.schedule_id,
+            Trainer.trainer_id,
             Schedule.schedule_start_time,
             Trainer.trainer_name,
             coalesce(Trainer.lesson_name, '').label('lesson_name'),
@@ -122,6 +124,38 @@ class ScheduleRepository:
             db.session.commit()
             return True
         return False
+
+    def select_day_schedule_by_trainer_id(self, trainer_id, date):
+        return db.session.query(
+            Schedule.schedule_start_time
+        ).join(TrainingUser, (TrainingUser.training_user_id == Schedule.training_user_id)
+               & (TrainingUser.trainer_id == trainer_id)
+               & (TrainingUser.training_user_delete_flag == False)
+               & (Schedule.schedule_delete_flag == False)
+               & (db.func.date(Schedule.schedule_start_time) == date)
+               ).all()
+
+    def select_week_schedule_by_trainer_id(self, trainer_id, start_date, end_date):
+        return db.session.query(Users.user_id, Users.user_name, Schedule.schedule_start_time) \
+            .join(TrainingUser,
+                  (TrainingUser.training_user_id == Schedule.training_user_id) \
+                  & (TrainingUser.trainer_id == trainer_id) \
+                  & (db.func.date(Schedule.schedule_start_time) >= start_date) \
+                  & (db.func.date(Schedule.schedule_start_time) <= end_date)) \
+            .join(Users, Users.user_id == TrainingUser.user_id) \
+            .all()
+
+    def select_month_schedule_by_user_id_and_trainer_id(self, trainer_id, user_id, start_date, end_date):
+        return db.session.query(
+            Schedule.schedule_id,
+            Schedule.schedule_start_time
+        ).join(TrainingUser, (TrainingUser.trainer_id == trainer_id)
+               & (TrainingUser.user_id == user_id)
+               & (db.func.date(Schedule.schedule_start_time) >= start_date)
+               & (db.func.date(Schedule.schedule_start_time) < end_date)
+               & (TrainingUser.training_user_delete_flag == False)
+               & (Schedule.schedule_delete_flag == False)
+               ).all()
 
 
 '''
