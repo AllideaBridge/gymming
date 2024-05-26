@@ -41,6 +41,7 @@ class ScheduleRepository:
     def select_day_schedule_by_user_id(self, user_id, year, month, day):
         schedules = (db.session.query(
             Schedule.schedule_id,
+            Trainer.trainer_id,
             Schedule.schedule_start_time,
             Trainer.trainer_name,
             coalesce(Trainer.lesson_name, '').label('lesson_name'),

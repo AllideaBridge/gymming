@@ -77,6 +77,7 @@ class ScheduleService:
         for row in results:
             item = {
                 "schedule_id": row.schedule_id,
+                "trainer_id": row.trainer_id,
                 "schedule_start_time": row.schedule_start_time.strftime(DATEFORMAT),
                 "lesson_name": row.lesson_name,
                 "trainer_name": row.trainer_name,
