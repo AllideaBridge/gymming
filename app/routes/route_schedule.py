@@ -75,8 +75,17 @@ class TrainerSchedule(Resource):
 
 @ns_schedule.route('/trainer/<int:trainer_id>/users/<int:user_id>')
 class TrainerAssignedUserSchedule(Resource):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.schedule_service = ScheduleService()
+
     def get(self, trainer_id, user_id):
-        pass
+        date_str = request.args.get('date')
+        schedule_date = datetime.strptime(date_str, DATEFORMAT).date()
+        query_type = request.args.get('type').upper()
+
+        result = self.schedule_service.get_training_user_schedule(trainer_id, user_id, schedule_date, query_type)
+        return {"result": result}
 
 
 # # 회원의 한달 중 스케쥴이 있는 날짜 조회.

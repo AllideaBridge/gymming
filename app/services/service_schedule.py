@@ -2,7 +2,7 @@ from calendar import monthrange
 from datetime import datetime, timedelta
 
 from app.common.constants import DATEFORMAT, SCHEDULE_MODIFIED, SCHEDULE_CANCELLED, SCHEDULE_TYPE_MONTH, \
-    SCHEDULE_TYPE_DAY, SCHEDULE_TYPE_WEEK
+    SCHEDULE_TYPE_DAY, SCHEDULE_TYPE_WEEK, DATETIMEFORMAT
 from app.common.exceptions import BadRequestError
 from app.repositories.repository_schedule import ScheduleRepository
 from app.repositories.repository_trainer_availability import TrainerAvailabilityRepository
@@ -188,7 +188,7 @@ class ScheduleService:
                 {
                     'user_id': s.user_id,
                     'user_name': s.user_name,
-                    'schedule_start_time': s.schedule_start_time.strftime('%Y-%m-%d %H:%M:%S')
+                    'schedule_start_time': s.schedule_start_time.strftime(DATETIMEFORMAT)
                 } for s in schedules
             ],
             'lesson_minute': trainer.lesson_minutes
@@ -230,3 +230,18 @@ class ScheduleService:
             })
 
         return {'result': result}
+
+    def get_training_user_schedule(self, trainer_id, user_id, date, query_type):
+        if query_type == SCHEDULE_TYPE_MONTH:
+            start_date = datetime(date.year, date.month, 1)
+            if date.month == 12:
+                end_date = datetime(date.year + 1, 1, 1)
+            else:
+                end_date = datetime(date.year, date.month + 1, 1)
+
+            schedules = self.schedule_repository.select_month_schedule_by_user_id_and_trainer_id(trainer_id, user_id,
+                                                                                                 start_date, end_date)
+            return [{"schedule_id": schedule.schedule_id, "schedule_start_time": schedule.schedule_start_time.strftime(DATETIMEFORMAT)} for
+                    schedule in schedules]
+
+        raise BadRequestError

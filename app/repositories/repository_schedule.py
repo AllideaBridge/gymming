@@ -145,6 +145,18 @@ class ScheduleRepository:
             .join(Users, Users.user_id == TrainingUser.user_id) \
             .all()
 
+    def select_month_schedule_by_user_id_and_trainer_id(self, trainer_id, user_id, start_date, end_date):
+        return db.session.query(
+            Schedule.schedule_id,
+            Schedule.schedule_start_time
+        ).join(TrainingUser, (TrainingUser.trainer_id == trainer_id)
+               & (TrainingUser.user_id == user_id)
+               & (db.func.date(Schedule.schedule_start_time) >= start_date)
+               & (db.func.date(Schedule.schedule_start_time) < end_date)
+               & (TrainingUser.training_user_delete_flag == False)
+               & (Schedule.schedule_delete_flag == False)
+               ).all()
+
 
 '''
     Repository Naming Rule
