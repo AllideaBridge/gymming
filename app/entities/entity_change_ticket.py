@@ -30,3 +30,16 @@ class ChangeTicket(db.Model):
         self.request_time = request_time
         self.created_at = datetime.utcnow()
         self.reject_reason = reject_reason
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'schedule_id': self.schedule_id,
+            'change_from': self.change_from,
+            'change_type': self.change_type,
+            'description': self.description,
+            'status': self.status,
+            'request_time': self.request_time.isoformat() if self.request_time else None,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'reject_reason': self.reject_reason
+        }
