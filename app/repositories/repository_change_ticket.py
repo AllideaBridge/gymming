@@ -13,7 +13,7 @@ class ChangeTicketRepository:
         db.session.add(data)
         db.session.commit()
 
-    def update_change_ticket(self, change_ticket: ChangeTicket):
+    def update_change_ticket(self):
         db.session.commit()
 
     def delete_change_ticket(self, change_ticket: ChangeTicket):

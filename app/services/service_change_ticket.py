@@ -15,7 +15,9 @@ class ChangeTicketService:
         self.change_ticket_repository = ChangeTicketRepository()
         self.schedule_repository = ScheduleRepository()
         self.schedule_service = ScheduleService()
-        pass
+        self.user_repository = UserRepository()
+        self.trainer_user_repository = TrainingUserRepository()
+
     def get_change_ticket_by_id(self, change_ticket_id) -> ChangeTicket:
         return self.change_ticket_repository.select_change_ticket_by_id(change_ticket_id)
 
@@ -53,8 +55,10 @@ class ChangeTicketService:
             self._approve_change_ticket(change_ticket_id, data)
         elif data.status == CHANGE_TICKET_STATUS_REJECTED:
             change_ticket_to_update.reject_reason = data.reject_reason
+        elif data.status == CHANGE_TICKET_STATUS_CANCELED:
+            pass
 
-        self.change_ticket_repository.update_change_ticket(change_ticket_to_update)
+        self.change_ticket_repository.update_change_ticket()
 
     def delete_change_ticket(self, change_ticket_id):
         change_ticket = self.change_ticket_repository.select_change_ticket_by_id(change_ticket_id)
