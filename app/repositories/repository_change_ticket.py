@@ -1,3 +1,5 @@
+from app.entities.entity_schedule import Schedule
+from app.entities.entity_training_user import TrainingUser
 from app.entities.entity_change_ticket import ChangeTicket
 from database import db
 
@@ -19,3 +21,17 @@ class ChangeTicketRepository:
     def delete_change_ticket(self, change_ticket: ChangeTicket):
         db.session.delete(change_ticket)
         db.session.commit()
+
+    def select_change_tickets_by_trainer_id(self, trainer_id, status):
+        change_tickets = (db.session.query(ChangeTicket)
+                          .join(Schedule, ChangeTicket.schedule_id == Schedule.schedule_id)
+                          .join(TrainingUser, Schedule.training_user_id == TrainingUser.training_user_id)
+                          .filter(TrainingUser.trainer_id == trainer_id, ChangeTicket.status == status).all())
+        return change_tickets
+
+    def select_change_tickets_by_user_id(self, user_id, status):
+        change_tickets = (db.session.query(ChangeTicket)
+                          .join(Schedule, ChangeTicket.schedule_id == Schedule.schedule_id)
+                          .join(TrainingUser, Schedule.training_user_id == TrainingUser.training_user_id)
+                          .filter(TrainingUser.user_id == user_id, ChangeTicket.status == status).all())
+        return change_tickets

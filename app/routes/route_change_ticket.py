@@ -1,7 +1,7 @@
+from flask import jsonify
 from flask_restx import Namespace, Resource
 from marshmallow import ValidationError
 
-from app.common.constants import CHANGE_TICKET_TYPE_CANCEL, CHANGE_TICKET_TYPE_MODIFY
 from app.common.exceptions import ApplicationError
 from app.routes.models.model_change_ticket import CreateChangeTicketRequest, UpdateChangeTicketRequest
 from app.services.service_change_ticket import ChangeTicketService
@@ -59,16 +59,46 @@ class ChangeTicketWithID(Resource):
             return {'message': '입력 데이터가 올바르지 않습니다.', 'errors': e.messages}, 400
 
 
-@ns_change_ticket.route('/trainer/<int:id>')
+@ns_change_ticket.route('/trainer/<int:trainer_id>')
 class ChangeTicketTrainer(Resource):
-    def get(self, status, page):
-        return {'message': '아직 개발중인 API'}, 500
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.change_ticket_service = ChangeTicketService()
+
+    def get(self, trainer_id):
+        try:
+            parser = ns_change_ticket.parser()
+            parser.add_argument('status', type=str, help='Status of the item')
+            parser.add_argument('page', type=int, help='Page number of the item')
+            args = parser.parse_args()
+
+            change_ticket_list = self.change_ticket_service.get_change_ticket_list_by_trainer(
+                trainer_id, args.get('status'), args.get('page')
+            )
+            return jsonify(change_ticket_list)
+        except ValidationError as e:
+            return {'message': '입력 데이터가 올바르지 않습니다.', 'errors': e.messages}, 400
 
 
-@ns_change_ticket.route('/user/<int:id>')
+@ns_change_ticket.route('/user/<int:user_id>')
 class ChangeTicketUser(Resource):
-    def get(self, status, page):
-        return {'message': '아직 개발중인 API'}, 500
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.change_ticket_service = ChangeTicketService()
+
+    def get(self, user_id):
+        try:
+            parser = ns_change_ticket.parser()
+            parser.add_argument('status', type=str, help='Status of the item')
+            parser.add_argument('page', type=int, help='Page number of the item')
+            args = parser.parse_args()
+
+            change_ticket_list = self.change_ticket_service.get_change_ticket_list_by_user(
+                user_id, args.get('status'), args.get('page')
+            )
+            return jsonify(change_ticket_list)
+        except ValidationError as e:
+            return {'message': '입력 데이터가 올바르지 않습니다.', 'errors': e.messages}, 400
 
 # 컨트롤러의 역할 : 유효성 검사
 # todo : 서비스 레이어로 비즈니스 로직 빼기.
