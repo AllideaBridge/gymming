@@ -16,6 +16,8 @@ class ChangeTicketService:
         self.schedule_repository = ScheduleRepository()
         self.schedule_service = ScheduleService()
         pass
+    def get_change_ticket_by_id(self, change_ticket_id) -> ChangeTicket:
+        return self.change_ticket_repository.select_change_ticket_by_id(change_ticket_id)
 
     def create_change_ticket(self, data: CreateChangeTicketRequest):
         if self.schedule_repository.select_schedule_by_id(data.schedule_id) is None:

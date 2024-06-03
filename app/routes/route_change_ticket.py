@@ -30,6 +30,13 @@ class ChangeTicketWithID(Resource):
         super().__init__(*args, **kwargs)
         self.change_ticket_service = ChangeTicketService()
 
+    def get(self, change_ticket_id):
+        try:
+            change_ticket = self.change_ticket_service.get_change_ticket_by_id(change_ticket_id)
+            return jsonify(change_ticket.to_dict())
+        except ValidationError as e:
+            return {'message': '입력 데이터가 올바르지 않습니다.', 'errors': e.messages}, 400
+
     def put(self, change_ticket_id):
         try:
             body = UpdateChangeTicketRequest(ns_change_ticket.payload)
