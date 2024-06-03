@@ -41,10 +41,7 @@ class ChangeTicketWithID(Resource):
         try:
             body = UpdateChangeTicketRequest(ns_change_ticket.payload)
 
-            if body.change_type == CHANGE_TICKET_TYPE_MODIFY:
-                self.change_ticket_service.handle_update_change_ticket(change_ticket_id, body)
-            elif body.change_type == CHANGE_TICKET_TYPE_CANCEL:
-                self.change_ticket_service.delete_change_ticket(change_ticket_id)
+            self.change_ticket_service.handle_update_change_ticket(change_ticket_id, body)
 
             return {'message': '변경 티켓을 수정했습니다.'}, 200
         except ApplicationError as e:
