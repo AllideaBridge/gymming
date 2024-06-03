@@ -18,38 +18,6 @@ class ScheduleService:
         self.training_user_repository = TrainingUserRepository()
         self.trainer_repository = TrainerRepository()
 
-    def handle_request(self, params):
-        if params['training_user_id']:
-            return self.get_training_user_schedules(params),
-        elif params['trainer_id']:
-            return self.get_schedule_by_trainer(params)
-        elif params['user_id']:
-            return self.get_schedule_by_user(params)
-        else:
-            print('hii')
-            raise BadRequestError
-
-    def get_training_user_schedules(self, params):
-        if params['year'] and params['month']:
-            return self.get_training_user_month_schedules(params)
-        raise BadRequestError
-
-    def get_training_user_month_schedules(self, params):
-        training_user_id = params['training_user_id']
-        year = params['year']
-        month = params['month']
-        page = params['page']
-        per_page = params['per_page']
-        schedules = self.schedule_repository.select_schedule_day_by_tu_id_and_year_month(
-            training_user_id=training_user_id, year=year, month=month, page=page, per_page=per_page)
-
-        return {
-            "schedules": [
-                {"schedule_id": schedule.schedule_id, "day": schedule.schedule_start_time.day}
-                for schedule in schedules
-            ]
-        }
-
     def handle_get_user_schedule(self, user_id, date_str, schedule_type):
         date_obj = datetime.strptime(date_str, "%Y-%m-%d")
 

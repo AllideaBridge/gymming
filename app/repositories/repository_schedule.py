@@ -198,7 +198,7 @@ class ScheduleRepository:
 
         return result
 
-
+# todo: 스케쥴 조회시 스케쥴 상태 조건 추가
 '''
     Repository Naming Rule
         method(select, update, delete, insert)_Record_by_condition
