@@ -163,4 +163,13 @@ class ScheduleTestCase(unittest.TestCase):
         self.assertFalse(response.get_json()["result"])
         self.assertEqual(response.get_json()["change_range"], 3)
 
-
+    def test_스케쥴_상세_조회(self):
+        schedule_id = 1
+        response = self.client.get(f'/schedules/{schedule_id}')
+        data = response.get_json()
+        self.assertIn("schedule_id", data)
+        self.assertIn("schedule_start_time", data)
+        self.assertIn("lesson_name", data)
+        self.assertIn("trainer_name", data)
+        self.assertIn("center_name", data)
+        self.assertIn("center_location", data)

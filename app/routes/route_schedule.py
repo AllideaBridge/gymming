@@ -34,7 +34,7 @@ class ScheduleResource(Resource):
         self.schedule_service = ScheduleService()
 
     def get(self, schedule_id):
-        pass
+        return self.schedule_service.get_schedule_details(schedule_id)
 
     def put(self, schedule_id):
         start_time = datetime.strptime(request.json['start_time'], DATETIMEFORMAT)

@@ -272,3 +272,15 @@ class ScheduleService:
             "result": False,
             "change_range": lesson_change_range
         }
+
+    def get_schedule_details(self, schedule_id):
+        schedule = self.schedule_repository.select_schedule_by_schedule_id(schedule_id)
+
+        return {
+            "schedule_id": schedule.schedule_id,
+            "schedule_start_time": schedule.schedule_start_time.strftime(DATETIMEFORMAT),
+            "lesson_name": schedule.lesson_name,
+            "trainer_name": schedule.trainer_name,
+            "center_name": schedule.center_name,
+            "center_location": schedule.center_location,
+        }
