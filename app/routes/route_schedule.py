@@ -59,6 +59,16 @@ class UserSchedule(Resource):
         return self.schedule_service.handle_get_user_schedule(user_id, date_str, schedule_type)
 
 
+@ns_schedule.route('/user/<int:schedule_id>/check-change')
+class UserScheduleCheck(Resource):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.schedule_service = ScheduleService()
+
+    def get(self, schedule_id):
+        return self.schedule_service.validate_schedule_change(schedule_id)
+
+
 @ns_schedule.route('/trainer/<int:trainer_id>')
 class TrainerSchedule(Resource):
     def __init__(self, *args, **kwargs):

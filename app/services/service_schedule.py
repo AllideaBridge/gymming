@@ -99,6 +99,8 @@ class ScheduleService:
         return self._cancel_schedule(schedule_id)
 
     def _change_schedule(self, schedule_id, start_time):
+        # todo : 스케쥴 변경 가능 범위인지 확인.
+
         schedule = self.schedule_repository.select_schedule_by_id(schedule_id)
         if not schedule:
             return {'error': 'Schedule not found'}, 404
@@ -129,6 +131,7 @@ class ScheduleService:
         return {'message': 'Schedule cancel successfully'}, 200
 
     def delete_schedule(self, schedule_id):
+        # todo : 스케쥴 변경 가능 범위인지 확인.
         deleted = self.schedule_repository.delete_schedule(schedule_id)
         if deleted:
             return {"message": "Schedule deleted successfully."}, 200
@@ -241,7 +244,31 @@ class ScheduleService:
 
             schedules = self.schedule_repository.select_month_schedule_by_user_id_and_trainer_id(trainer_id, user_id,
                                                                                                  start_date, end_date)
-            return [{"schedule_id": schedule.schedule_id, "schedule_start_time": schedule.schedule_start_time.strftime(DATETIMEFORMAT)} for
+            return [{"schedule_id": schedule.schedule_id,
+                     "schedule_start_time": schedule.schedule_start_time.strftime(DATETIMEFORMAT)} for
                     schedule in schedules]
 
         raise BadRequestError
+
+    def validate_schedule_change(self, schedule_id):
+        schedule = self.schedule_repository.select_schedule_by_schedule_id(schedule_id)
+
+        if schedule is None:
+            raise BadRequestError
+
+        lesson_change_range_row = self.schedule_repository.select_lesson_change_range_by_schedue_id(schedule_id)
+        lesson_change_range = lesson_change_range_row.lesson_change_range
+
+        current_time = datetime.now()
+        diff = schedule.schedule_start_time - current_time
+
+        if current_time <= schedule.schedule_start_time and timedelta(days=lesson_change_range) <= diff:
+            return {
+                "result": True,
+                "change_range": lesson_change_range
+            }
+
+        return {
+            "result": False,
+            "change_range": lesson_change_range
+        }
