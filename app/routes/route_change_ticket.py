@@ -1,7 +1,9 @@
 from flask_restx import Namespace, Resource
 from marshmallow import ValidationError
 
-from app.routes.models.model_change_ticket import CreateChangeTicketRequest
+from app.common.constants import CHANGE_TICKET_TYPE_CANCEL, CHANGE_TICKET_TYPE_MODIFY
+from app.common.exceptions import ApplicationError
+from app.routes.models.model_change_ticket import CreateChangeTicketRequest, UpdateChangeTicketRequest
 from app.services.service_change_ticket import ChangeTicketService
 
 ns_change_ticket = Namespace('change-ticket', description='Change ticket related operations')
@@ -22,13 +24,35 @@ class ChangeTicket(Resource):
             return {'message': '입력 데이터가 올바르지 않습니다.', 'errors': e.messages}, 400
 
 
-@ns_change_ticket.route('/<int:id>')
+@ns_change_ticket.route('/<int:change_ticket_id>')
 class ChangeTicketWithID(Resource):
-    def put(self):
-        return {'message': '아직 개발중인 API'}, 500
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.change_ticket_service = ChangeTicketService()
 
-    def delete(self):
-        return {'message': '아직 개발중인 API'}, 500
+    def put(self, change_ticket_id):
+        try:
+            body = UpdateChangeTicketRequest(ns_change_ticket.payload)
+
+            if body.change_type == CHANGE_TICKET_TYPE_MODIFY:
+                self.change_ticket_service.handle_update_change_ticket(change_ticket_id, body)
+            elif body.change_type == CHANGE_TICKET_TYPE_CANCEL:
+                self.change_ticket_service.delete_change_ticket(change_ticket_id)
+
+            return {'message': '변경 티켓을 수정했습니다.'}, 200
+        except ApplicationError as e:
+            return {'message': e.message}, 400
+        except ValidationError as e:
+            return {'message': '입력 데이터가 올바르지 않습니다.', 'errors': e.messages}, 400
+
+    def delete(self, change_ticket_id):
+        try:
+            self.change_ticket_service.delete_change_ticket(change_ticket_id)
+            return {'message': '변경 티켓을 삭제했습니다.'}, 200
+        except ApplicationError as e:
+            return {'message': e.message}, 400
+        except ValidationError as e:
+            return {'message': '입력 데이터가 올바르지 않습니다.', 'errors': e.messages}, 400
 
 
 @ns_change_ticket.route('/trainer/<int:id>')

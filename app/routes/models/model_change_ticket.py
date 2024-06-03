@@ -19,9 +19,18 @@ class CreateChangeTicketRequest(Schema):
 
 
 class UpdateChangeTicketRequest(Schema):
-    change_from = fields.Str()
-    change_type = fields.Str()
-    status = fields.Str()
-    change_reason = fields.Str()
-    reject_reason = fields.Str()
-    start_time = fields.Str()
+    change_from = fields.Str(required=True)
+    change_type = fields.Str(required=True)
+    status = fields.Str(required=True)
+    change_reason = fields.Str(required=True)
+    reject_reason = fields.Str(required=True)
+    start_time = fields.Str(required=True)
+
+    def __init__(self, data):
+        super().__init__()
+        self.change_from = data["change_from"]
+        self.change_type = data["change_type"]
+        self.status = data["status"]
+        self.change_reason = data["change_reason"]
+        self.reject_reason = data["reject_reason"]
+        self.start_time = data["start_time"]
