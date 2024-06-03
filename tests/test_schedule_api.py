@@ -25,8 +25,7 @@ class ScheduleTestCase(unittest.TestCase):
             user_name="Test User",
             user_gender="M",
             user_phone_number="010-1234-5678",
-            user_profile_img_url="http://example.com/profile.jpg",
-            user_login_platform="test_platform"
+            user_profile_img_url="http://example.com/profile.jpg"
         )
         db.session.add(user)
         db.session.commit()
@@ -124,3 +123,53 @@ class ScheduleTestCase(unittest.TestCase):
         }
         response = self.client.put(f'/schedules/{schedule_id}', json=body)
         self.assertIn('conflict', response.get_json()['message'])
+
+    def test_스케쥴_변경_가능(self):
+        once_upon_a_time = datetime.now() + timedelta(days=4)
+        schedule = Schedule(
+            training_user_id=1,
+            schedule_start_time=once_upon_a_time
+        )
+        db.session.add(schedule)
+        db.session.commit()
+
+        response = self.client.get(f'/schedules/user/{schedule.schedule_id}/check-change')
+        self.assertTrue(response.get_json()["result"])
+        self.assertEqual(response.get_json()["change_range"], 3)
+
+    def test_스케쥴_변경_가능_경계값(self):
+        once_upon_a_time = datetime.now() + timedelta(days=3) + timedelta(minutes=1)
+        schedule = Schedule(
+            training_user_id=1,
+            schedule_start_time=once_upon_a_time
+        )
+        db.session.add(schedule)
+        db.session.commit()
+
+        response = self.client.get(f'/schedules/user/{schedule.schedule_id}/check-change')
+        self.assertTrue(response.get_json()["result"])
+        self.assertEqual(response.get_json()["change_range"], 3)
+
+    def test_스케쥴_변경_불가능_경계값(self):
+        once_upon_a_time = datetime.now() + timedelta(days=3) - timedelta(minutes=1)
+        schedule = Schedule(
+            training_user_id=1,
+            schedule_start_time=once_upon_a_time
+        )
+        db.session.add(schedule)
+        db.session.commit()
+
+        response = self.client.get(f'/schedules/user/{schedule.schedule_id}/check-change')
+        self.assertFalse(response.get_json()["result"])
+        self.assertEqual(response.get_json()["change_range"], 3)
+
+    def test_스케쥴_상세_조회(self):
+        schedule_id = 1
+        response = self.client.get(f'/schedules/{schedule_id}')
+        data = response.get_json()
+        self.assertIn("schedule_id", data)
+        self.assertIn("schedule_start_time", data)
+        self.assertIn("lesson_name", data)
+        self.assertIn("trainer_name", data)
+        self.assertIn("center_name", data)
+        self.assertIn("center_location", data)

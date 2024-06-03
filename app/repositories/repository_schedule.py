@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from sqlalchemy import func, and_, literal_column
 from sqlalchemy.sql.functions import coalesce
@@ -157,7 +157,48 @@ class ScheduleRepository:
                & (Schedule.schedule_delete_flag == False)
                ).all()
 
+    def select_schedule_by_schedule_id(self, schedule_id):
+        result = db.session.query(
+            Schedule.schedule_id,
+            Schedule.schedule_start_time,
+            coalesce(Trainer.lesson_name, '').label('lesson_name'),
+            Trainer.trainer_name,
+            coalesce(Center.center_name, '').label('center_name'),
+            coalesce(Center.center_location, '').label('center_location'),
+        ).join(
+            TrainingUser, Schedule.training_user_id == TrainingUser.training_user_id
+        ).join(
+            Trainer, TrainingUser.trainer_id == Trainer.trainer_id
+        ).outerjoin(
+            Center, Trainer.center_id == Center.center_id
+        ).filter(
+            Schedule.schedule_id == schedule_id,
+            Schedule.schedule_delete_flag == False,
+            TrainingUser.training_user_delete_flag == False,
+            Trainer.trainer_delete_flag == False
+        ).first()
 
+        return result
+
+    def select_lesson_change_range_by_schedue_id(self, schedule_id):
+        result = db.session.query(
+            coalesce(Trainer.lesson_change_range, 0).label('lesson_change_range')
+        ).join(
+            TrainingUser, Trainer.trainer_id == TrainingUser.trainer_id
+        ).join(
+            Schedule, TrainingUser.training_user_id == Schedule.training_user_id
+        ).filter(
+            and_(
+                Schedule.schedule_id == schedule_id,
+                Schedule.schedule_delete_flag == False,
+                TrainingUser.training_user_delete_flag == False,
+                Trainer.trainer_delete_flag == False
+            )
+        ).first()
+
+        return result
+
+# todo: 스케쥴 조회시 스케쥴 상태 조건 추가
 '''
     Repository Naming Rule
         method(select, update, delete, insert)_Record_by_condition
