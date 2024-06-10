@@ -1,7 +1,7 @@
 import unittest
 from datetime import datetime, timedelta
 
-from app import create_app, Trainer, TrainingUser, Users, Schedule, TrainerAvailability
+from app import create_app, Trainer, TrainerUser, Users, Schedule, TrainerAvailability
 from app.common.constants import DATETIMEFORMAT
 from database import db
 
@@ -35,13 +35,13 @@ class TrainerScheduleTestCase(unittest.TestCase):
                          user_email=f'user{i}@example.com', user_login_platform='platform')  # 필드는 Users 모델에 맞게 조정
             db.session.add(user)
             db.session.commit()
-            training_user = TrainingUser(trainer_id=trainer.trainer_id, user_id=user.user_id)
-            db.session.add(training_user)
+            trainer_user = TrainerUser(trainer_id=trainer.trainer_id, user_id=user.user_id)
+            db.session.add(trainer_user)
             db.session.commit()
 
             # 스케쥴 데이터는 2024-01-08 11:30:00 부터 insert
             for j in range(3):
-                schedule = Schedule(training_user_id=training_user.training_user_id,
+                schedule = Schedule(trainer_user_id=trainer_user.trainer_user_id,
                                     schedule_start_time=start_time + timedelta(days=i) + timedelta(hours=i) + timedelta(
                                         days=j))
                 db.session.add(schedule)

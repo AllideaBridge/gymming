@@ -85,5 +85,5 @@ class TrainerAssignedUserSchedule(Resource):
         schedule_date = datetime.strptime(date_str, DATEFORMAT).date()
         query_type = request.args.get('type').upper()
 
-        result = self.schedule_service.get_training_user_schedule(trainer_id, user_id, schedule_date, query_type)
+        result = self.schedule_service.get_trainer_user_schedule(trainer_id, user_id, schedule_date, query_type)
         return {"result": result}

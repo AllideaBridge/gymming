@@ -1,7 +1,7 @@
 from flask_restx import fields
 
 request_get_schedules_model = {
-    'training_user_id': fields.Integer,
+    'trainer_user_id': fields.Integer,
     'trainer_id': fields.Integer,
     'user_id': fields.Integer,
     'year': fields.Integer,
