@@ -15,12 +15,13 @@ class TrainerUsers(Resource):
     def get(self, trainer_id):
         try:
             parser = ns_trainer_user.parser()
-            parser.add_argument('trainer_user_delete_flag', type=bool, help='TrainerUser Delete flag')
+            parser.add_argument('trainer_user_delete_flag', type=str, help='TrainerUser Delete flag')
             args = parser.parse_args()
+            delete_flag = True if args.get('trainer_user_delete_flag') == 'True' else False
 
-            self.tu_service.get_users(trainer_id, args.get('trainer_user_delete_flag'))
+            results = self.tu_service.get_users_related_trainer(trainer_id, delete_flag)
 
-            return {}, 200
+            return {"results": results}, 200
         except ValidationError as e:
             return {'message': '입력 데이터가 올바르지 않습니다.', 'errors': e.messages}, 400
 
