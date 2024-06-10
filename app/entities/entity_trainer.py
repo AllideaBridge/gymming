@@ -1,6 +1,6 @@
 from sqlalchemy import and_, func, literal_column
 
-from app.entities.entity_training_user import TrainingUser
+from app.entities.entity_trainer_user import TrainerUser
 from app.entities.entity_schedule import Schedule
 from app.common.constants import SCHEDULE_SCHEDULED
 from database import db
@@ -27,9 +27,9 @@ class Trainer(db.Model):
     @staticmethod
     def conflict_trainer_schedule(trainer_id, request_time):
         conflict_schedule = db.session.query(Schedule). \
-            join(TrainingUser, and_(TrainingUser.training_user_id == Schedule.training_user_id,
-                                    Schedule.schedule_status == SCHEDULE_SCHEDULED)). \
-            join(Trainer, and_(Trainer.trainer_id == TrainingUser.trainer_id,
+            join(TrainerUser, and_(TrainerUser.trainer_user_id == Schedule.trainer_user_id,
+                                   Schedule.schedule_status == SCHEDULE_SCHEDULED)). \
+            join(Trainer, and_(Trainer.trainer_id == TrainerUser.trainer_id,
                                Trainer.trainer_id == trainer_id)). \
             filter(func.abs(func.timestampdiff(literal_column('MINUTE'), Schedule.schedule_start_time,
                                                request_time)) < Trainer.lesson_minutes). \

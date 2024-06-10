@@ -10,7 +10,7 @@ from app.routes.route_trainer import ns_trainer
 from app.routes.route_change_ticket import ns_change_ticket
 from app.entities.entity_center import Center
 from app.entities.entity_center_pr_image import CenterPrImage
-from app.entities.entity_training_user import TrainingUser
+from app.entities.entity_trainer_user import TrainerUser
 from app.entities.entity_change_ticket import ChangeTicket
 from app.entities.entity_schedule import Schedule
 from app.entities.entity_trainer import Trainer

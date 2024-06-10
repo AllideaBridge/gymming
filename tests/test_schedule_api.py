@@ -1,7 +1,7 @@
 import unittest
 from datetime import datetime, timedelta
 
-from app import create_app, Users, Schedule, Trainer, TrainingUser
+from app import create_app, Users, Schedule, Trainer, TrainerUser
 from app.common.constants import SCHEDULE_CANCELLED, SCHEDULE_SCHEDULED, DATETIMEFORMAT, SCHEDULE_MODIFIED
 from database import db
 
@@ -42,12 +42,12 @@ class ScheduleTestCase(unittest.TestCase):
             )
             db.session.add(trainer)
             db.session.commit()
-            training_user = TrainingUser(trainer_id=trainer.trainer_id, user_id=user.user_id)
-            db.session.add(training_user)
+            trainer_user = TrainerUser(trainer_id=trainer.trainer_id, user_id=user.user_id)
+            db.session.add(trainer_user)
             db.session.commit()
             start_time = datetime(2024, 1, 15 + i)
             for j in range(10):
-                schedule = Schedule(training_user_id=training_user.training_user_id,
+                schedule = Schedule(trainer_user_id=trainer_user.trainer_user_id,
                                     schedule_start_time=start_time + timedelta(days=j),
                                     schedule_status=SCHEDULE_SCHEDULED)
                 db.session.add(schedule)
@@ -127,7 +127,7 @@ class ScheduleTestCase(unittest.TestCase):
     def test_스케쥴_변경_가능(self):
         once_upon_a_time = datetime.now() + timedelta(days=4)
         schedule = Schedule(
-            training_user_id=1,
+            trainer_user_id=1,
             schedule_start_time=once_upon_a_time
         )
         db.session.add(schedule)
@@ -140,7 +140,7 @@ class ScheduleTestCase(unittest.TestCase):
     def test_스케쥴_변경_가능_경계값(self):
         once_upon_a_time = datetime.now() + timedelta(days=3) + timedelta(minutes=1)
         schedule = Schedule(
-            training_user_id=1,
+            trainer_user_id=1,
             schedule_start_time=once_upon_a_time
         )
         db.session.add(schedule)
@@ -153,7 +153,7 @@ class ScheduleTestCase(unittest.TestCase):
     def test_스케쥴_변경_불가능_경계값(self):
         once_upon_a_time = datetime.now() + timedelta(days=3) - timedelta(minutes=1)
         schedule = Schedule(
-            training_user_id=1,
+            trainer_user_id=1,
             schedule_start_time=once_upon_a_time
         )
         db.session.add(schedule)
