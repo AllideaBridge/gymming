@@ -7,16 +7,6 @@ from app.services.service_schedule import ScheduleService
 
 ns_schedule = Namespace('schedules', description='Schedules related operations', path='/schedules')
 
-# API 모델 정의
-user_schedule_model = ns_schedule.model('UserSchedule', {
-    'trainer_name': fields.String,
-    'lesson_name': fields.String,
-    'center_name': fields.String,
-    'center_location': fields.String,
-    'schedule_start_time': fields.DateTime,
-    'schedule_id': fields.Integer
-})
-
 
 @ns_schedule.route('/<int:schedule_id>')
 class ScheduleResource(Resource):

@@ -5,5 +5,5 @@ class ApplicationError(Exception):
 
 
 class BadRequestError(ApplicationError):
-    def __init__(self):
-        super().__init__("Bad Request, Invalid Parameter", 400)
+    def __init__(self, message=None):
+        super().__init__("Bad Request, Invalid Parameter" if message is None else message, 400)

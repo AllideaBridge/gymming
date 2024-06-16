@@ -26,5 +26,9 @@ class UserRepository:
         db.session.commit()
         return user
 
+    @staticmethod
+    def select_by_social_id(social_id):
+        return Users.query.filter_by(user_social_id=social_id).first()
+
 
 user_repository = UserRepository()

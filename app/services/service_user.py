@@ -26,5 +26,17 @@ class UserService:
     def update_user(user, data):
         return user_repository.update(user, data)
 
+    @staticmethod
+    def get_user_by_social_id(social_id):
+        return user_repository.select_by_social_id(social_id)
+
+    @staticmethod
+    def create_user_only_social_id(social_id):
+        new_user = Users(
+            user_social_id=social_id
+        )
+        user_repository.insert(new_user)
+        return new_user
+
 
 user_service = UserService()
