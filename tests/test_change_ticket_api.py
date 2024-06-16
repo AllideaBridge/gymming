@@ -1,7 +1,7 @@
 import unittest
 from datetime import datetime, timedelta
 
-from app import create_app, Trainer, TrainingUser, Users, Schedule, ChangeTicket
+from app import create_app, Trainer, TrainerUser, Users, Schedule, ChangeTicket
 from app.common.constants import CHANGE_TICKET_TYPE_CANCEL, CHANGE_TICKET_TYPE_MODIFY, CHANGE_TICKET_STATUS_WAITING, \
     CHANGE_TICKET_STATUS_REJECTED, CHANGE_TICKET_STATUS_APPROVED, SCHEDULE_CANCELLED, SCHEDULE_MODIFIED, \
     SCHEDULE_SCHEDULED
@@ -37,12 +37,12 @@ class TrainerScheduleTestCase(unittest.TestCase):
                          user_email=f'user{i}@example.com', user_login_platform='platform')  # 필드는 Users 모델에 맞게 조정
             db.session.add(user)
             db.session.commit()
-            training_user = TrainingUser(trainer_id=trainer.trainer_id, user_id=user.user_id)
-            db.session.add(training_user)
+            trainer_user = TrainerUser(trainer_id=trainer.trainer_id, user_id=user.user_id)
+            db.session.add(trainer_user)
             db.session.commit()
             start_time = datetime(2024, 1, 7 + i, 10 + i, 30)
             for j in range(3):
-                schedule = Schedule(training_user_id=training_user.training_user_id,
+                schedule = Schedule(trainer_user_id=trainer_user.trainer_user_id,
                                     schedule_start_time=start_time + timedelta(days=j))
                 db.session.add(schedule)
                 db.session.commit()
@@ -71,9 +71,9 @@ class TrainerScheduleTestCase(unittest.TestCase):
 
         if data:
             for req in data:
-                r = db.session.query(TrainingUser.trainer_id, ChangeTicket.status) \
+                r = db.session.query(TrainerUser.trainer_id, ChangeTicket.status) \
                     .join(Schedule, ChangeTicket.schedule_id == Schedule.schedule_id) \
-                    .join(TrainingUser, Schedule.training_user_id == TrainingUser.training_user_id) \
+                    .join(TrainerUser, Schedule.trainer_user_id == TrainerUser.trainer_user_id) \
                     .filter(ChangeTicket.id == req['id']) \
                     .first()
                 self.assertEqual(r[0], trainer_id)
@@ -88,9 +88,9 @@ class TrainerScheduleTestCase(unittest.TestCase):
 
         if data:
             for req in data:
-                r = db.session.query(TrainingUser.trainer_id, ChangeTicket.status) \
+                r = db.session.query(TrainerUser.trainer_id, ChangeTicket.status) \
                     .join(Schedule, ChangeTicket.schedule_id == Schedule.schedule_id) \
-                    .join(TrainingUser, Schedule.training_user_id == TrainingUser.training_user_id) \
+                    .join(TrainerUser, Schedule.trainer_user_id == TrainerUser.trainer_user_id) \
                     .filter(ChangeTicket.id == req['id']) \
                     .first()
                 self.assertEqual(r[0], trainer_id)
@@ -164,7 +164,7 @@ class TrainerScheduleTestCase(unittest.TestCase):
         response = self.client.post(URL_CHANGE_TICKET_APPROVED, json=body)
         change_ticket = ChangeTicket.query.filter_by(id=change_ticket_id).first()
         schedule = Schedule.query.filter_by(schedule_id=schedule_id).first()
-        new_schedule = Schedule.query.filter_by(training_user_id=schedule.training_user_id,
+        new_schedule = Schedule.query.filter_by(trainer_user_id=schedule.trainer_user_id,
                                                 schedule_start_time=change_ticket.request_time).first()
         self.assertEqual(response.status_code, 200)
         self.assertEqual(change_ticket.status, CHANGE_TICKET_STATUS_APPROVED)
@@ -189,7 +189,7 @@ class TrainerScheduleTestCase(unittest.TestCase):
         change_ticket_id = change_ticket.id
         schedule_id = change_ticket.schedule_id
         schedule = Schedule.query.filter_by(schedule_id=schedule_id).first()
-        already_exist_schedule = Schedule(training_user_id=schedule.training_user_id,
+        already_exist_schedule = Schedule(trainer_user_id=schedule.trainer_user_id,
                                           schedule_start_time=str(change_ticket.request_time),
                                           schedule_status=SCHEDULE_SCHEDULED)
         db.session.add(already_exist_schedule)

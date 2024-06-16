@@ -2,7 +2,7 @@ import http
 import unittest
 from datetime import datetime, timedelta
 
-from app import create_app, Trainer, TrainingUser, Users, Schedule, TrainerAvailability, Center
+from app import create_app, Trainer, TrainerUser, Users, Schedule, TrainerAvailability, Center
 from app.common.constants import DATEFORMAT
 from database import db
 
@@ -51,16 +51,16 @@ class TrainerUserTestCase(unittest.TestCase):
                 'special_notes': '무릎 부상 주의'
             }
 
-            response = self.client.post('/trainer/training-user/user', json=data)
+            response = self.client.post('/trainer/trainer-user/user', json=data)
             self.assertEqual(response.status_code, 200)
             self.assertIn('새로운 회원이 등록되었습니다.', response.json['message'])
 
-        response = self.client.get(f'/trainer/training-user?trainer_id={trainer.trainer_id}')
+        response = self.client.get(f'/trainer/trainer-user?trainer_id={trainer.trainer_id}')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.get_json()), len(users))
 
         response = self.client.get(
-            f'/trainer/training-user?trainer_id={trainer.trainer_id}&training_user_delete_flag=true')
+            f'/trainer/trainer-user?trainer_id={trainer.trainer_id}&trainer_user_delete_flag=true')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.get_json()), 0)
 
@@ -85,27 +85,27 @@ class TrainerUserTestCase(unittest.TestCase):
         db.session.commit()
 
         # TrainingUser 데이터 생성
-        training_user = TrainingUser(trainer_id=trainer.trainer_id, user_id=user.user_id)
-        db.session.add(training_user)
+        trainer_user = TrainerUser(trainer_id=trainer.trainer_id, user_id=user.user_id)
+        db.session.add(trainer_user)
         db.session.commit()
 
         # Schedule 데이터 생성
         schedules = []
         start_time = datetime(2024, 1, 15)
         for i in range(10):
-            schedule = Schedule(training_user_id=training_user.training_user_id,
+            schedule = Schedule(trainer_user_id=trainer_user.trainer_user_id,
                                 schedule_start_time=start_time + timedelta(days=i))
             db.session.add(schedule)
             schedules.append(schedule)
         db.session.commit()
 
         response = self.client.get(
-            f'/schedules/trainer/{training_user.trainer_id}/users/{training_user.user_id}?date=2024-01-01&type=month')
+            f'/schedules/trainer/{trainer_user.trainer_id}/users/{trainer_user.user_id}?date=2024-01-01&type=month')
         print(response.get_json())
         data = response.get_json()["result"]
         self.assertEqual(len(data), len(schedules))
         for schedule in schedules:
-            response = self.client.get(f'/trainer/training-user/schedule/{schedule.schedule_id}')
+            response = self.client.get(f'/trainer/trainer-user/schedule/{schedule.schedule_id}')
             data = response.get_json()
             self.assertEqual(schedule.schedule_start_time.strftime(DATEFORMAT), data["schedule_start_time"])
             self.assertEqual(schedule.schedule_status, data["schedule_status"])
@@ -143,28 +143,28 @@ class TrainerUserTestCase(unittest.TestCase):
         db.session.commit()
 
         # TrainingUser 데이터 생성
-        training_user = TrainingUser(trainer_id=trainer.trainer_id, user_id=user.user_id)
-        db.session.add(training_user)
+        trainer_user = TrainerUser(trainer_id=trainer.trainer_id, user_id=user.user_id)
+        db.session.add(trainer_user)
         db.session.commit()
 
-        training_user_id = training_user.training_user_id
+        trainer_user_id = trainer_user.trainer_user_id
         lesson_total_count = 10
         lesson_current_count = 10
-        response = self.client.put('/trainer/training-user/user', json={
-            'training_user_id': training_user_id,
+        response = self.client.put('/trainer/trainer-user/user', json={
+            'trainer_user_id': trainer_user_id,
             'lesson_total_count': lesson_total_count,
             'lesson_current_count': lesson_current_count
         })
 
         self.assertEqual(response.status_code, http.HTTPStatus.OK)
 
-        training_user_from_db = TrainingUser.query.filter_by(training_user_id=training_user_id).first()
-        self.assertEqual(training_user_from_db.lesson_current_count, lesson_current_count)
-        self.assertEqual(training_user_from_db.lesson_total_count, lesson_total_count)
+        trainer_user_from_db = TrainerUser.query.filter_by(trainer_user_id=trainer_user_id).first()
+        self.assertEqual(trainer_user_from_db.lesson_current_count, lesson_current_count)
+        self.assertEqual(trainer_user_from_db.lesson_total_count, lesson_total_count)
 
-        self.client.delete('/trainer/training-user/user', json={
-            'training_user_id': training_user_id
+        self.client.delete('/trainer/trainer-user/user', json={
+            'trainer_user_id': trainer_user_id
         })
 
-        training_user_from_db = TrainingUser.query.filter_by(training_user_id=training_user_id).first()
-        self.assertTrue(training_user_from_db.training_user_delete_flag)
+        trainer_user_from_db = TrainerUser.query.filter_by(trainer_user_id=trainer_user_id).first()
+        self.assertTrue(trainer_user_from_db.trainer_user_delete_flag)

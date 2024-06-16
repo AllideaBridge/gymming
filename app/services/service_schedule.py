@@ -6,7 +6,7 @@ from app.common.constants import DATEFORMAT, SCHEDULE_MODIFIED, SCHEDULE_CANCELL
 from app.common.exceptions import BadRequestError
 from app.repositories.repository_schedule import ScheduleRepository
 from app.repositories.repository_trainer_availability import TrainerAvailabilityRepository
-from app.repositories.repository_training_user import TrainingUserRepository
+from app.repositories.repository_trainer_user import TrainerUserRepository
 from app.repositories.repository_trainer import TrainerRepository
 
 
@@ -15,7 +15,7 @@ class ScheduleService:
     def __init__(self):
         self.schedule_repository = ScheduleRepository()
         self.trainer_availability_repository = TrainerAvailabilityRepository()
-        self.training_user_repository = TrainingUserRepository()
+        self.trainer_user_repository = TrainerUserRepository()
         self.trainer_repository = TrainerRepository()
 
     def handle_get_user_schedule(self, user_id, date_str, schedule_type):
@@ -73,8 +73,8 @@ class ScheduleService:
         if not schedule:
             return {'error': 'Schedule not found'}, 404
 
-        training_user = self.training_user_repository.select_by_id(schedule.training_user_id)
-        trainer_id = training_user.trainer_id
+        trainer_user = self.trainer_user_repository.select_by_id(schedule.trainer_user_id)
+        trainer_id = trainer_user.trainer_id
 
         conflict_schedule = self.schedule_repository.select_conflict_trainer_schedule_by_time(trainer_id, start_time)
 
@@ -202,7 +202,7 @@ class ScheduleService:
 
         return {'result': result}
 
-    def get_training_user_schedule(self, trainer_id, user_id, date, query_type):
+    def get_trainer_user_schedule(self, trainer_id, user_id, date, query_type):
         if query_type == SCHEDULE_TYPE_MONTH:
             start_date = datetime(date.year, date.month, 1)
             if date.month == 12:
