@@ -1,8 +1,11 @@
 import logging
+from datetime import timedelta
 
 from flask import Flask
+from flask_jwt_extended import JWTManager
 from flask_restx import Api
 
+from app.routes.route_auth import ns_auth
 from database import db
 from app.routes.route_users import ns_user
 from app.routes.route_schedule import ns_schedule
@@ -27,6 +30,7 @@ def create_app(env):
     api.add_namespace(ns_trainer)
     api.add_namespace(ns_schedule)
     api.add_namespace(ns_change_ticket)
+    api.add_namespace(ns_auth)
 
     if env == "test":
         logging.basicConfig()
@@ -40,6 +44,13 @@ def create_app(env):
     # db 인스턴스 초기화
     db.init_app(app)
 
+    ## todo : 나중에 키 설정
+    app.config['JWT_SECRET_KEY'] = 'your_secret_key'
+
+    ## todo : 지우기
+    # app.config['JWT_REFRESH_TOKEN_EXPIRES'] = timedelta(days=7)
+
+    JWTManager(app)
     with app.app_context():
         db.create_all()
 
