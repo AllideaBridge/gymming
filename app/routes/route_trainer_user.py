@@ -2,7 +2,7 @@ from flask_restx import Namespace, Resource
 from marshmallow import ValidationError
 
 from app.common.exceptions import BadRequestError
-from app.routes.models.model_trainer_user import CreateTrainerUserRelationRequest
+from app.routes.models.model_trainer_user import CreateTrainerUserRelationRequest, UpdateTrainerUserRequest
 from app.services.service_trainer_user import trainer_user_service
 
 ns_trainer_user = Namespace('trainer-user', description='TrainerUser API')
@@ -51,7 +51,9 @@ class TrainerUser(Resource):
 
     def put(self, trainer_id, user_id):
         try:
-            return {}, 200
+            body = UpdateTrainerUserRequest(ns_trainer_user.payload)
+            self.tu_service.update_trainer_user(trainer_id, user_id, body)
+            return {'message': '회원정보가 수정됐습니다.'}, 200
         except ValidationError as e:
             return {'message': '입력 데이터가 올바르지 않습니다.', 'errors': e.messages}, 400
 

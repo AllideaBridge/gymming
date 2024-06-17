@@ -7,7 +7,7 @@ from app.repositories.repository_trainer import trainer_repository
 from app.repositories.repository_trainer_user import trainer_user_repository
 from app.repositories.repository_users import user_repository
 from app.routes.models.model_trainer_user import UsersRelatedTrainerResponse, CreateTrainerUserRelationRequest, \
-    TrainersRelatedUserResponse, UserDetailRelatedTrainerResponse
+    TrainersRelatedUserResponse, UserDetailRelatedTrainerResponse, UpdateTrainerUserRequest
 
 
 class TrainerUserService:
@@ -74,6 +74,26 @@ class TrainerUserService:
         )
 
         self.tu_repository.create_trainer_user(new_trainer_user)
+
+    def update_trainer_user(self, trainer_id, user_id, data: UpdateTrainerUserRequest):
+        user = self.user_repository.select_by_id(user_id)
+        if not user:
+            raise BadRequestError(f"유저가 존재하지 않습니다. User_id: {user_id}")
+
+        trainer = self.trainer_repository.select_trainer_by_id(trainer_id)
+        if not trainer:
+            raise BadRequestError(f"트레이너가 존재하지 않습니다. Trainer: {trainer_id}")
+
+        trainer_user: TrainerUser = self.tu_repository.select_by_trainer_id_and_user_id(
+            trainer_id=trainer_id, user_id=user_id)
+        if not trainer_user:
+            raise BadRequestError(f"해당 트레이너에게 트레이닝 받는 유저가 없습니다. Trainer_id: {trainer_id}, User_id: {user_id}")
+
+        trainer_user.lesson_total_count = data.lesson_total_count
+        trainer_user.lesson_current_count = data.lesson_current_count
+        trainer_user.exercise_days = data.exercise_days
+        trainer_user.special_notes = data.special_notice
+        self.tu_repository.update_trainer_user()
 
     def delete_trainer_user(self, trainer_id, user_id):
         trainer_user: TrainerUser = self.tu_repository.select_by_trainer_id_and_user_id(
