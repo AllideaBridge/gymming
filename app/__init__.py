@@ -11,6 +11,7 @@ from app.routes.route_users import ns_user
 from app.routes.route_schedule import ns_schedule
 from app.routes.route_trainer import ns_trainer
 from app.routes.route_change_ticket import ns_change_ticket
+from app.routes.route_trainer_user import ns_trainer_user
 from app.entities.entity_center import Center
 from app.entities.entity_center_pr_image import CenterPrImage
 from app.entities.entity_trainer_user import TrainerUser
@@ -31,6 +32,7 @@ def create_app(env):
     api.add_namespace(ns_schedule)
     api.add_namespace(ns_change_ticket)
     api.add_namespace(ns_auth)
+    api.add_namespace(ns_trainer_user)
 
     if env == "test":
         logging.basicConfig()

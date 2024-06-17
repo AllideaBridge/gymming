@@ -30,5 +30,12 @@ class UserRepository:
     def select_by_social_id(social_id):
         return Users.query.filter_by(user_social_id=social_id).first()
 
+    @staticmethod
+    def select_by_username_and_phone_number(user_name: str, phone_number: str):
+        return Users.query.filter_by(
+            user_name=user_name,
+            user_phone_number=phone_number
+        ).first()
+
 
 user_repository = UserRepository()
