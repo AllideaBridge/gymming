@@ -1,6 +1,8 @@
 from flask_restx import Namespace, Resource
 from marshmallow import ValidationError
 
+from app.common.exceptions import BadRequestError
+from app.routes.models.model_trainer_user import CreateTrainerUserRelationRequest
 from app.services.service_trainer_user import trainer_user_service
 
 ns_trainer_user = Namespace('trainer-user', description='TrainerUser API')
@@ -27,9 +29,11 @@ class TrainerUsers(Resource):
 
     def post(self, trainer_id):
         try:
-            return {}, 200
-        except ValidationError as e:
-            return {'message': '입력 데이터가 올바르지 않습니다.', 'errors': e.messages}, 400
+            body = CreateTrainerUserRelationRequest(ns_trainer_user.payload)
+            self.tu_service.create_trainer_user_relation(trainer_id, body)
+            return {'message': '새로운 회원이 등록됐습니다.'}, 200
+        except BadRequestError or ValidationError as e:
+            return {'message': '입력 데이터가 올바르지 않습니다.', 'errors': e.message}, 400
 
 
 @ns_trainer_user.route('/trainer/<int:trainer_id>/users/<int:user_id>')

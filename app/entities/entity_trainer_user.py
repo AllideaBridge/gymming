@@ -15,8 +15,3 @@ class TrainerUser(db.Model):
     special_notes = db.Column(db.String(255), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     deleted_at = db.Column(db.DateTime)
-
-    @staticmethod
-    def find_by_id(trainer_user_id):
-        return TrainerUser.query.filter_by(trainer_user_id=trainer_user_id).first()
-

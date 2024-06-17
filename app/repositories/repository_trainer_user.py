@@ -13,5 +13,12 @@ class TrainerUserRepository:
                 .filter(TrainerUser.trainer_id == trainer_id, TrainerUser.trainer_user_delete_flag == delete_flag)
                 .all())
 
+    def select_by_trainer_id_and_user_id(self, trainer_id, user_id):
+        return TrainerUser.query.filter_by(trainer_id=trainer_id, user_id=user_id).first()
+
+    def create_trainer_user(self, new_trainer_user: TrainerUser):
+        db.session.add(new_trainer_user)
+        db.session.commit()
+
 
 trainer_user_repository = TrainerUserRepository()
