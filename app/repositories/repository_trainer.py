@@ -30,3 +30,6 @@ class TrainerRepository:
         db.session.add(trainer)
         db.session.commit()
         return trainer
+
+
+trainer_repository = TrainerRepository()

@@ -1,6 +1,7 @@
 from app.common.exceptions import BadRequestError
 from app.entities.entity_trainer_user import TrainerUser
 from app.entities.entity_users import Users
+from app.repositories.repository_trainer import trainer_repository
 from app.repositories.repository_trainer_user import trainer_user_repository
 from app.repositories.repository_users import user_repository
 from app.routes.models.model_trainer_user import UsersRelatedTrainerResponse, CreateTrainerUserRelationRequest, \
@@ -11,8 +12,13 @@ class TrainerUserService:
     def __init__(self):
         self.tu_repository = trainer_user_repository
         self.user_repository = user_repository
+        self.trainer_repository = trainer_repository
 
     def get_users_related_trainer(self, trainer_id: int, delete_flag: bool = False):
+        trainer = self.trainer_repository.select_trainer_by_id(trainer_id)
+        if not trainer:
+            raise BadRequestError("트레이너가 존재하지 않습니다.")
+
         entities = self.tu_repository.select_with_users_by_trainer_id(trainer_id, delete_flag)
 
         results = []

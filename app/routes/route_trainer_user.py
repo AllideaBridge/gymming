@@ -24,7 +24,7 @@ class TrainerUsers(Resource):
             results = self.tu_service.get_users_related_trainer(trainer_id, delete_flag)
 
             return {"results": results}, 200
-        except ValidationError as e:
+        except BadRequestError or ValidationError as e:
             return {'message': '입력 데이터가 올바르지 않습니다.', 'errors': e.messages}, 400
 
     def post(self, trainer_id):
