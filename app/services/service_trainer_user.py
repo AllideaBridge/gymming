@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from app.common.exceptions import BadRequestError
 from app.entities.entity_trainer_user import TrainerUser
 from app.entities.entity_users import Users
@@ -72,6 +74,19 @@ class TrainerUserService:
         )
 
         self.tu_repository.create_trainer_user(new_trainer_user)
+
+    def delete_trainer_user(self, trainer_id, user_id):
+        trainer_user: TrainerUser = self.tu_repository.select_by_trainer_id_and_user_id(
+            trainer_id=trainer_id, user_id=user_id)
+        if not trainer_user:
+            raise BadRequestError(f"해당 트레이너에게 트레이닝 받는 유저가 없습니다. Trainer_id: {trainer_id}, User_id: {user_id}")
+
+        if trainer_user.trainer_user_delete_flag or trainer_user.deleted_at:
+            raise BadRequestError(f"이미 종료된 유저입니다. Trainer_id: {trainer_id}, User_id: {user_id}")
+
+        trainer_user.trainer_user_delete_flag = True
+        trainer_user.deleted_at = datetime.utcnow()
+        self.tu_repository.update_trainer_user()
 
 
 trainer_user_service = TrainerUserService()

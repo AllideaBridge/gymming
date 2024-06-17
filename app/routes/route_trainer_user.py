@@ -57,7 +57,8 @@ class TrainerUser(Resource):
 
     def delete(self, trainer_id, user_id):
         try:
-            return {}, 200
+            self.tu_service.delete_trainer_user(trainer_id, user_id)
+            return {'message': '회원정보가 수정됐습니다.'}, 200
         except ValidationError as e:
             return {'message': '입력 데이터가 올바르지 않습니다.', 'errors': e.messages}, 400
 

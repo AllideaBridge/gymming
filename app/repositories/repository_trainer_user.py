@@ -27,5 +27,7 @@ class TrainerUserRepository:
         db.session.add(new_trainer_user)
         db.session.commit()
 
+    def update_trainer_user(self):
+        db.session.commit()
 
 trainer_user_repository = TrainerUserRepository()
