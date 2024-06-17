@@ -40,10 +40,12 @@ class TrainerUsers(Resource):
 class TrainerUser(Resource):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.tu_service = trainer_user_service
 
     def get(self, trainer_id, user_id):
         try:
-            return {}, 200
+            user_detail: dict = self.tu_service.get_user_detail_related_trainer(trainer_id, user_id)
+            return user_detail, 200
         except ValidationError as e:
             return {'message': '입력 데이터가 올바르지 않습니다.', 'errors': e.messages}, 400
 

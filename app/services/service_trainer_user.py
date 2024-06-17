@@ -5,7 +5,7 @@ from app.repositories.repository_trainer import trainer_repository
 from app.repositories.repository_trainer_user import trainer_user_repository
 from app.repositories.repository_users import user_repository
 from app.routes.models.model_trainer_user import UsersRelatedTrainerResponse, CreateTrainerUserRelationRequest, \
-    TrainersRelatedUserResponse
+    TrainersRelatedUserResponse, UserDetailRelatedTrainerResponse
 
 
 class TrainerUserService:
@@ -37,6 +37,21 @@ class TrainerUserService:
         for trainer_user, trainer in entities:
             results.append(TrainersRelatedUserResponse.to_dict(trainer_user, trainer))
         return results
+
+    def get_user_detail_related_trainer(self, trainer_id, user_id):
+        user = self.user_repository.select_by_id(user_id)
+        if not user:
+            raise BadRequestError(f"유저가 존재하지 않습니다. User_id: {user_id}")
+
+        trainer = self.trainer_repository.select_trainer_by_id(trainer_id)
+        if not trainer:
+            raise BadRequestError(f"트레이너가 존재하지 않습니다. Trainer: {trainer_id}")
+
+        trainer_user = self.tu_repository.select_by_trainer_id_and_user_id(trainer_id=trainer_id, user_id=user_id)
+        if not trainer_user:
+            raise BadRequestError(f"해당 트레이너에게 트레이닝 받는 유저가 없습니다. Trainer_id: {trainer_id}, User_id: {user_id}")
+
+        return UserDetailRelatedTrainerResponse.to_dict(user, trainer_user)
 
     def create_trainer_user_relation(self, trainer_id, data: CreateTrainerUserRelationRequest):
         user: Users = self.user_repository.select_by_username_and_phone_number(data.user_name, data.phone_number)

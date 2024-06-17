@@ -66,3 +66,40 @@ class TrainersRelatedUserResponse:
             "center_name": "Center 아직 적용 안함",
             "center_location": "Center 아직 적용 안함"
         }
+
+
+class UserDetailRelatedTrainerResponse:
+    name: str
+    email: str
+    gender: str
+    phone_number: str
+    profile_img_url: str
+    login_platform: str
+    delete_flag: bool
+    birthday: str
+    lesson_total_count: int
+    lesson_current_count: int
+    exercise_days: str
+    special_notice: str
+    registered_date: str
+    last_date: str
+
+    @staticmethod
+    def to_dict(user: Users, trainer_user: TrainerUser):
+        return {
+            "name": user.user_name,
+            "email": user.user_email,
+            "gender": user.user_gender,
+            "phone_number": user.user_phone_number,
+            "profile_img_url": user.user_profile_img_url,
+            "login_platform": user.user_social_id,
+            "delete_flag": user.user_delete_flag,
+            "birthday": user.user_birthday,
+            "lesson_total_count": trainer_user.lesson_total_count,
+            "lesson_current_count": trainer_user.lesson_current_count,
+            "exercise_days": trainer_user.exercise_days,
+            "special_notice": trainer_user.special_notes,
+            "registered_date": trainer_user.created_at.strftime(DATETIMEFORMAT),
+            "last_date": trainer_user.deleted_at.strftime(
+                DATETIMEFORMAT) if trainer_user.deleted_at is not None else None
+        }
