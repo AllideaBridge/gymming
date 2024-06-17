@@ -3,7 +3,8 @@ from app.entities.entity_trainer_user import TrainerUser
 from app.entities.entity_users import Users
 from app.repositories.repository_trainer_user import trainer_user_repository
 from app.repositories.repository_users import user_repository
-from app.routes.models.model_trainer_user import TrainerUserResponse, CreateTrainerUserRelationRequest
+from app.routes.models.model_trainer_user import UsersRelatedTrainerResponse, CreateTrainerUserRelationRequest, \
+    TrainersRelatedUserResponse
 
 
 class TrainerUserService:
@@ -16,7 +17,19 @@ class TrainerUserService:
 
         results = []
         for trainer_user, user in entities:
-            results.append(TrainerUserResponse.to_dict(trainer_user, user))
+            results.append(UsersRelatedTrainerResponse.to_dict(trainer_user, user))
+        return results
+
+    def get_trainers_related_user(self, user_id):
+        user = self.user_repository.select_by_id(user_id)
+        if not user:
+            raise BadRequestError("유저가 존재하지 않습니다.")
+
+        entities = self.tu_repository.select_with_trainers_by_user_id(user_id)
+
+        results = []
+        for trainer_user, trainer in entities:
+            results.append(TrainersRelatedUserResponse.to_dict(trainer_user, trainer))
         return results
 
     def create_trainer_user_relation(self, trainer_id, data: CreateTrainerUserRelationRequest):
