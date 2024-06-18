@@ -1,9 +1,11 @@
 from datetime import datetime
 
 from flask import request
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask_restx import Namespace, Resource, fields
 
 from app.common.constants import DATETIMEFORMAT, DATEFORMAT
+from app.common.exceptions import UnAuthorizedError
 from app.entities.entity_center import Center
 from app.entities.entity_trainer import Trainer
 from app.entities.entity_users import Users
@@ -59,9 +61,17 @@ class TrainerResource(Resource):
         trainer = Trainer.query.filter_by(trainer_id=trainer_id).first()
         return trainer
 
-    @ns_trainer.expect(trainer_model, validate=True)
-    @ns_trainer.marshal_with(trainer_model)
+    # @ns_trainer.expect(trainer_model, validate=True)
+    # @ns_trainer.marshal_with(trainer_model)
+    @jwt_required()
     def put(self, trainer_id):
+        current_user = get_jwt_identity()
+
+        if trainer_id != current_user['trainer_id']:
+            raise UnAuthorizedError(message="유효하지 않는 id입니다.")
+
+        data = ns_trainer.payload
+
         # 기존 트레이너 정보 업데이트
         trainer = Trainer.query.filter_by(trainer_id=trainer_id).first()
         # todo : 레코드 없는 경우 처리

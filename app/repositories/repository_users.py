@@ -21,7 +21,7 @@ class UserRepository:
         user.user_phone_number = data.get('user_phone_number', user.user_phone_number)
         user.user_profile_img_url = data.get('user_profile_img_url', user.user_profile_img_url)
         user.user_delete_flag = data.get('user_delete_flag', user.user_delete_flag)
-        user.user_login_platform = data.get('user_login_platform', user.user_login_platform)
+        user.user_birthday = data.get('user_birthday', user.user_birthday)
 
         db.session.commit()
         return user
