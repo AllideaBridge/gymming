@@ -9,3 +9,8 @@ class TrainerService:
     @staticmethod
     def create_trainer_only_social_id(trainer_social_id):
         return TrainerRepository.insert_trainer_with_social_id(trainer_social_id)
+
+    @staticmethod
+    def update_trainer(trainer_id, data):
+        trainer = TrainerRepository.select_trainer_by_id(trainer_id)
+

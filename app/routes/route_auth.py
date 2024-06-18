@@ -33,7 +33,6 @@ class UserKakaoAuthResource(Resource):
         access_token = create_access_token(identity=identity)
         refresh_token = create_refresh_token(identity=identity)
 
-        print(len(refresh_token))
         self.token_service.insert_user_token(user.user_id, refresh_token)
 
         return {
