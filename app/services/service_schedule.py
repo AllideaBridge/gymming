@@ -46,7 +46,7 @@ class ScheduleService:
             item = {
                 "schedule_id": row.schedule_id,
                 "trainer_id": row.trainer_id,
-                "schedule_start_time": row.schedule_start_time.strftime(DATEFORMAT),
+                "schedule_start_time": row.schedule_start_time.strftime(DATETIMEFORMAT),
                 "lesson_name": row.lesson_name,
                 "trainer_name": row.trainer_name,
                 "center_name": row.center_name,
@@ -64,7 +64,9 @@ class ScheduleService:
     def handle_change_user_schedule(self, schedule_id, start_time, status):
         if status == SCHEDULE_MODIFIED:
             return self._change_schedule(schedule_id, start_time)
-        return self._cancel_schedule(schedule_id)
+        if status == SCHEDULE_CANCELLED:
+            return self._cancel_schedule(schedule_id)
+        raise BadRequestError
 
     def _change_schedule(self, schedule_id, start_time):
         # todo : 스케쥴 변경 가능 범위인지 확인.
