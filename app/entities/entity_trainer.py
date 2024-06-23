@@ -18,9 +18,12 @@ class Trainer(db.Model):
     lesson_price = db.Column(db.Integer, nullable=True)
     lesson_minutes = db.Column(db.Integer, nullable=True)
     lesson_change_range = db.Column(db.Integer, nullable=True)
-    center_id = db.Column(db.Integer, db.ForeignKey('center.center_id'), nullable=True)
     trainer_email = db.Column(db.String(100), nullable=True)
     trainer_delete_flag = db.Column(db.Boolean, default=False)
+    center_name = db.Column(db.String(30), nullable=True)
+    center_location = db.Column(db.String(100), nullable=True)
+    center_number = db.Column(db.String(20), nullable=True)
+    center_type = db.Column(db.String(20), nullable=True)
 
     @staticmethod
     def conflict_trainer_schedule(trainer_id, request_time):

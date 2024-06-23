@@ -12,8 +12,6 @@ from app.routes.route_schedule import ns_schedule
 from app.routes.route_trainer import ns_trainer
 from app.routes.route_change_ticket import ns_change_ticket
 from app.routes.route_trainer_user import ns_trainer_user
-from app.entities.entity_center import Center
-from app.entities.entity_center_pr_image import CenterPrImage
 from app.entities.entity_trainer_user import TrainerUser
 from app.entities.entity_change_ticket import ChangeTicket
 from app.entities.entity_schedule import Schedule

@@ -6,7 +6,6 @@ from flask_restx import Namespace, Resource, fields
 
 from app.common.constants import DATETIMEFORMAT, DATEFORMAT
 from app.common.exceptions import UnAuthorizedError
-from app.entities.entity_center import Center
 from app.entities.entity_trainer import Trainer
 from app.entities.entity_users import Users
 from app.entities.entity_schedule import Schedule
@@ -239,33 +238,33 @@ class TrainingUserSchedules(Resource):
         }
 
 
-@ns_trainer.route('/trainer-user/schedule/<int:schedule_id>')
-class TrainingUserSchedule(Resource):
-    @ns_trainer.doc(description='트레이너가 회원을 조회한 화면에서 수업 했던 날짜를 클릭하여 해당 수업의 상세내용을 조회하는 api ',
-                          params={
-                          })
-    def get(self, schedule_id):
-        result = db.session.query(
-            Schedule.schedule_start_time,
-            Schedule.schedule_status,
-            Center.center_location,
-            Center.center_name
-        ).join(TrainerUser, TrainerUser.trainer_user_id == Schedule.trainer_user_id
-               ).join(Trainer, Trainer.trainer_id == TrainerUser.trainer_id
-                      ).outerjoin(Center, Center.center_id == Trainer.center_id  # outerjoin 사용
-                                  ).filter(Schedule.schedule_id == schedule_id).first()
-
-        if not result:
-            return {"message": "해당 schedule_id를 가진 스케줄이 존재하지 않습니다."}, 404
-
-        schedule_start_time, schedule_status, center_location, center_name = result
-
-        # Center 정보가 없는 경우 None 또는 적절한 대체 값을 반환
-        return {
-            "schedule_start_time": schedule_start_time.strftime(DATEFORMAT) if schedule_start_time else None,
-            "schedule_status": schedule_status,
-            "center_location": center_location if center_location else "정보 없음",
-            "center_name": center_name if center_name else "정보 없음"
-        }
+# @ns_trainer.route('/trainer-user/schedule/<int:schedule_id>')
+# class TrainingUserSchedule(Resource):
+#     @ns_trainer.doc(description='트레이너가 회원을 조회한 화면에서 수업 했던 날짜를 클릭하여 해당 수업의 상세내용을 조회하는 api ',
+#                           params={
+#                           })
+#     def get(self, schedule_id):
+#         result = db.session.query(
+#             Schedule.schedule_start_time,
+#             Schedule.schedule_status,
+#             Center.center_location,
+#             Center.center_name
+#         ).join(TrainerUser, TrainerUser.trainer_user_id == Schedule.trainer_user_id
+#                ).join(Trainer, Trainer.trainer_id == TrainerUser.trainer_id
+#                       ).outerjoin(Center, Center.center_id == Trainer.center_id  # outerjoin 사용
+#                                   ).filter(Schedule.schedule_id == schedule_id).first()
+#
+#         if not result:
+#             return {"message": "해당 schedule_id를 가진 스케줄이 존재하지 않습니다."}, 404
+#
+#         schedule_start_time, schedule_status, center_location, center_name = result
+#
+#         # Center 정보가 없는 경우 None 또는 적절한 대체 값을 반환
+#         return {
+#             "schedule_start_time": schedule_start_time.strftime(DATEFORMAT) if schedule_start_time else None,
+#             "schedule_status": schedule_status,
+#             "center_location": center_location if center_location else "정보 없음",
+#             "center_name": center_name if center_name else "정보 없음"
+#         }
 
 
