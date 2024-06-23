@@ -6,7 +6,6 @@ from sqlalchemy.sql.functions import coalesce
 from app.common.constants import SCHEDULE_SCHEDULED
 from app.entities.entity_trainer_availability import TrainerAvailability
 from app.entities.entity_trainer import Trainer
-from app.entities.entity_center import Center
 from app.entities.entity_trainer_user import TrainerUser
 from app.entities.entity_schedule import Schedule
 from app.entities.entity_users import Users
@@ -45,14 +44,13 @@ class ScheduleRepository:
             Schedule.schedule_start_time,
             Trainer.trainer_name,
             coalesce(Trainer.lesson_name, '').label('lesson_name'),
-            coalesce(Center.center_name, '').label('center_name'),
-            coalesce(Center.center_location, '').label('center_location'),
+            coalesce(Trainer.center_name, '').label('center_name'),
+            coalesce(Trainer.center_location, '').label('center_location'),
             Trainer.lesson_change_range,
             Trainer.lesson_minutes
         )
                      .join(TrainerUser, TrainerUser.trainer_user_id == Schedule.trainer_user_id)
                      .join(Trainer, TrainerUser.trainer_id == Trainer.trainer_id)
-                     .outerjoin(Center, Trainer.center_id == Center.center_id)
                      .filter(TrainerUser.user_id == user_id,
                              func.year(Schedule.schedule_start_time) == year,
                              func.month(Schedule.schedule_start_time) == month,
@@ -163,14 +161,12 @@ class ScheduleRepository:
             Schedule.schedule_start_time,
             coalesce(Trainer.lesson_name, '').label('lesson_name'),
             Trainer.trainer_name,
-            coalesce(Center.center_name, '').label('center_name'),
-            coalesce(Center.center_location, '').label('center_location'),
+            coalesce(Trainer.center_name, '').label('center_name'),
+            coalesce(Trainer.center_location, '').label('center_location'),
         ).join(
             TrainerUser, Schedule.trainer_user_id == TrainerUser.trainer_user_id
         ).join(
             Trainer, TrainerUser.trainer_id == Trainer.trainer_id
-        ).outerjoin(
-            Center, Trainer.center_id == Center.center_id
         ).filter(
             Schedule.schedule_id == schedule_id,
             Schedule.schedule_delete_flag == False,

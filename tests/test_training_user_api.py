@@ -2,7 +2,7 @@ import http
 import unittest
 from datetime import datetime, timedelta
 
-from app import create_app, Trainer, TrainerUser, Users, Schedule, TrainerAvailability, Center
+from app import create_app, Trainer, TrainerUser, Users, Schedule
 from app.common.constants import DATEFORMAT
 from database import db
 
