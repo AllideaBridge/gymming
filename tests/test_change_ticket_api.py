@@ -6,6 +6,7 @@ from app.common.constants import CHANGE_TICKET_TYPE_CANCEL, CHANGE_TICKET_TYPE_M
     CHANGE_TICKET_STATUS_REJECTED, CHANGE_TICKET_STATUS_APPROVED, SCHEDULE_CANCELLED, SCHEDULE_MODIFIED, \
     SCHEDULE_SCHEDULED
 from database import db
+from tests.test_data_factory import TestDataFactory, ChangeTicketBuilder
 
 URL_CHANGE_TICKET_APPROVED = '/change-ticket/approve'
 
@@ -24,62 +25,93 @@ class TrainerScheduleTestCase(unittest.TestCase):
         db.create_all()
         cls.client = cls.app.test_client()
 
-        # Trainer 레코드 추가
-        trainer = Trainer(trainer_name='Test Trainer', trainer_email='test@example.com',
-                          trainer_gender='M', trainer_phone_number='010-0000-0000', lesson_minutes=60,
-                          lesson_change_range=3)
-        db.session.add(trainer)
-        db.session.commit()
-
-        # Users, TrainingUser, Schedule 레코드 추가
-        for i in range(1, 4):
-            user = Users(user_name=f'Test User {i}', user_phone_number=f'010-1020-101{i}',
-                         user_email=f'user{i}@example.com', user_login_platform='platform')  # 필드는 Users 모델에 맞게 조정
-            db.session.add(user)
-            db.session.commit()
-            trainer_user = TrainerUser(trainer_id=trainer.trainer_id, user_id=user.user_id)
-            db.session.add(trainer_user)
-            db.session.commit()
-            start_time = datetime(2024, 1, 7 + i, 10 + i, 30)
-            for j in range(3):
-                schedule = Schedule(trainer_user_id=trainer_user.trainer_user_id,
-                                    schedule_start_time=start_time + timedelta(days=j))
-                db.session.add(schedule)
-                db.session.commit()
-                change_ticket_cancel = ChangeTicket(schedule_id=schedule.schedule_id, change_from='user',
-                                                    change_type=CHANGE_TICKET_TYPE_CANCEL,
-                                                    description=f'Change ticket cancel description {j}',
-                                                    status=CHANGE_TICKET_STATUS_WAITING)
-                db.session.add(change_ticket_cancel)
-                change_ticket_modify = ChangeTicket(schedule_id=schedule.schedule_id, change_from='user',
-                                                    change_type=CHANGE_TICKET_TYPE_MODIFY, request_time=datetime.now(),
-                                                    description=f'Change ticket modify description {j}',
-                                                    status=CHANGE_TICKET_STATUS_WAITING)
-                db.session.add(change_ticket_modify)
-                db.session.commit()
+        # # Trainer 레코드 추가
+        # trainer = Trainer(trainer_name='Test Trainer', trainer_email='test@example.com',
+        #                   trainer_gender='M', trainer_phone_number='010-0000-0000', lesson_minutes=60,
+        #                   lesson_change_range=3)
+        # db.session.add(trainer)
+        # db.session.commit()
+        #
+        # # Users, TrainingUser, Schedule 레코드 추가
+        # for i in range(1, 4):
+        #     user = Users(user_name=f'Test User {i}', user_phone_number=f'010-1020-101{i}',
+        #                  user_email=f'user{i}@example.com', user_login_platform='platform')  # 필드는 Users 모델에 맞게 조정
+        #     db.session.add(user)
+        #     db.session.commit()
+        #     trainer_user = TrainerUser(trainer_id=trainer.trainer_id, user_id=user.user_id)
+        #     db.session.add(trainer_user)
+        #     db.session.commit()
+        #     start_time = datetime(2024, 1, 7 + i, 10 + i, 30)
+        #     for j in range(3):
+        #         schedule = Schedule(trainer_user_id=trainer_user.trainer_user_id,
+        #                             schedule_start_time=start_time + timedelta(days=j))
+        #         db.session.add(schedule)
+        #         db.session.commit()
+        #         change_ticket_cancel = ChangeTicket(schedule_id=schedule.schedule_id, change_from='user',
+        #                                             change_type=CHANGE_TICKET_TYPE_CANCEL,
+        #                                             description=f'Change ticket cancel description {j}',
+        #                                             status=CHANGE_TICKET_STATUS_WAITING)
+        #         db.session.add(change_ticket_cancel)
+        #         change_ticket_modify = ChangeTicket(schedule_id=schedule.schedule_id, change_from='user',
+        #                                             change_type=CHANGE_TICKET_TYPE_MODIFY, request_time=datetime.now(),
+        #                                             description=f'Change ticket modify description {j}',
+        #                                             status=CHANGE_TICKET_STATUS_WAITING)
+        #         db.session.add(change_ticket_modify)
+        #         db.session.commit()
 
     @classmethod
     def tearDownClass(cls):
         db.session.remove()
 
     def test_트레이너_요청_대기_리스트_조회(self):
-        trainer_id = 1
+        trainer = TestDataFactory.create_trainer()
+        waiting_tickets = [
+            ChangeTicketBuilder()
+            .with_trainer(trainer)
+            .with_status(CHANGE_TICKET_STATUS_WAITING)
+            .build()
+            for _ in range(3)
+        ]
+        # 다른 상태의 티켓도 생성
+        ChangeTicketBuilder().with_trainer(trainer).with_status(CHANGE_TICKET_STATUS_APPROVED).build()
+
+        # 다른 트레이너의 대기 티켓 생성 (이 티켓은 결과에 포함되면 안 됨)
+        other_trainer = TestDataFactory.create_trainer()
+        ChangeTicketBuilder().with_trainer(other_trainer).with_status(CHANGE_TICKET_STATUS_WAITING).build()
+
         response = self.client.get(
-            f'/change-ticket/trainer?trainer_id={trainer_id}&status={CHANGE_TICKET_STATUS_WAITING}')
+            f'/change-ticket/trainer/{trainer.trainer_id}?status={CHANGE_TICKET_STATUS_WAITING}')
         self.assertEqual(response.status_code, 200)
         data = response.get_json()
 
-        if data:
-            for req in data:
-                r = db.session.query(TrainerUser.trainer_id, ChangeTicket.status) \
-                    .join(Schedule, ChangeTicket.schedule_id == Schedule.schedule_id) \
-                    .join(TrainerUser, Schedule.trainer_user_id == TrainerUser.trainer_user_id) \
-                    .filter(ChangeTicket.id == req['id']) \
-                    .first()
-                self.assertEqual(r[0], trainer_id)
-                self.assertEqual(r[1], CHANGE_TICKET_STATUS_WAITING)
+        self.assertEqual(len(data), len(waiting_tickets))
+
+        for req in data:
+            self.assertEqual(req['change_ticket_status'], CHANGE_TICKET_STATUS_WAITING)
+
+        # 데이터베이스에서 직접 확인
+        db_tickets = db.session.query(ChangeTicket).join(Schedule).join(TrainerUser).filter(
+            TrainerUser.trainer_id == trainer.trainer_id,
+            ChangeTicket.status == CHANGE_TICKET_STATUS_WAITING
+        ).all()
+
+        self.assertEqual(len(db_tickets), len(data), "데이터베이스의 티켓 수와 응답의 티켓 수가 일치해야 합니다.")
+
+        for db_ticket in db_tickets:
+            self.assertTrue(any(ticket['id'] == db_ticket.id for ticket in data),
+                            f"데이터베이스의 티켓 ID {db_ticket.id}가 응답에 포함되어야 합니다.")
 
     def test_트레이너_요청_완료_리스트_조회(self):
+        trainer = TestDataFactory.create_trainer()
+        waiting_tickets = [
+            ChangeTicketBuilder()
+            .with_trainer(trainer)
+            .with_status(CHANGE_TICKET_STATUS_WAITING)
+            .build()
+            for _ in range(3)
+        ]
+
+
         trainer_id = 1
         response = self.client.get(
             f'/change-ticket/trainer?trainer_id={trainer_id}&status={CHANGE_TICKET_STATUS_APPROVED},{CHANGE_TICKET_STATUS_REJECTED}')
