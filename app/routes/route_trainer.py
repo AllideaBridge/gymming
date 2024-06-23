@@ -10,9 +10,10 @@ from app.entities.entity_trainer import Trainer
 from app.entities.entity_users import Users
 from app.entities.entity_schedule import Schedule
 from app.entities.entity_trainer_user import TrainerUser
+from app.services.service_trainer import TrainerService
 from database import db
 
-ns_trainer = Namespace('trainer', description='Trainer API')
+ns_trainer = Namespace('trainers', description='Trainer API')
 
 # todo : 트레이너 상세조회시 엔터티 필드 최신화
 trainer_model = ns_trainer.model('Trainer', {
@@ -70,21 +71,7 @@ class TrainerResource(Resource):
             raise UnAuthorizedError(message="유효하지 않는 id입니다.")
 
         data = ns_trainer.payload
-
-        # 기존 트레이너 정보 업데이트
-        trainer = Trainer.query.filter_by(trainer_id=trainer_id).first()
-        # todo : 레코드 없는 경우 처리
-        data = ns_trainer.payload
-
-        trainer.user_id = data['user_id']
-        trainer.center_id = data.get('center_id')
-        trainer.trainer_pr_url = data.get('trainer_pr_url')
-        trainer.trainer_pt_price = data.get('trainer_pt_price')
-        trainer.certification = data.get('certification')
-        trainer.trainer_education = data.get('trainer_education')
-
-        db.session.commit()
-        return trainer
+        return TrainerService.update_trainer(trainer_id, data)
 
 
 trainer_user_model = ns_trainer.model('TrainingUser', {
@@ -111,10 +98,10 @@ class TrainingUserList(Resource):
 
         # TrainingUser와 Users 테이블을 조인하고, 조건에 맞는 레코드를 조회합니다.
         trainer_users = (db.session.query(TrainerUser, Users.user_name)
-                          .join(Users, TrainerUser.user_id == Users.user_id)
-                          .filter(TrainerUser.trainer_id == trainer_id,
-                                  TrainerUser.trainer_user_delete_flag == trainer_user_delete_flag)
-                          .all())
+                         .join(Users, TrainerUser.user_id == Users.user_id)
+                         .filter(TrainerUser.trainer_id == trainer_id,
+                                 TrainerUser.trainer_user_delete_flag == trainer_user_delete_flag)
+                         .all())
 
         # 조회된 레코드와 user_name을 json 형식으로 변환하여 리턴합니다.
         return [{
@@ -134,8 +121,8 @@ class TrainingUserList(Resource):
 class TrainingUserUser(Resource):
     @ns_trainer.expect(trainer_user_model)
     @ns_trainer.doc(description='트레이너가 회원을 추가하는 api',
-                          params={
-                          })
+                    params={
+                    })
     def post(self):
         data = ns_trainer.payload
         user = Users.query.filter_by(user_name=data['user_name'], user_phone_number=data['user_phone_number']).first()
@@ -158,8 +145,8 @@ class TrainingUserUser(Resource):
         return {'message': '새로운 회원이 등록되었습니다.'}, 200
 
     @ns_trainer.doc(description='트레이너가 회원의 pt 횟수를 수정하는 api',
-                          params={
-                          })
+                    params={
+                    })
     def put(self):
         data = ns_trainer.payload
         trainer_user_id = data['trainer_user_id']
@@ -181,8 +168,8 @@ class TrainingUserUser(Resource):
             return {'message': 'TrainingUser not found'}, 404
 
     @ns_trainer.doc(description='트레이너가 회원을 삭제하는 api',
-                          params={
-                          })
+                    params={
+                    })
     def delete(self):
         data = ns_trainer.payload
         trainer_user_id = data['trainer_user_id']
@@ -204,8 +191,8 @@ class TrainingUserUser(Resource):
 @ns_trainer.route('/trainer-user/month-schedules')
 class TrainingUserSchedules(Resource):
     @ns_trainer.doc(description='트레이너가 회원을 조회한 화면에서 해당 회원의 한달 수업 내역을 조회 하는 api ',
-                          params={
-                          })
+                    params={
+                    })
     def get(self):
         trainer_user_id = request.args.get('trainer_user_id', type=int)
         year = request.args.get('year', type=int)
@@ -237,7 +224,6 @@ class TrainingUserSchedules(Resource):
             ]
         }
 
-
 # @ns_trainer.route('/trainer-user/schedule/<int:schedule_id>')
 # class TrainingUserSchedule(Resource):
 #     @ns_trainer.doc(description='트레이너가 회원을 조회한 화면에서 수업 했던 날짜를 클릭하여 해당 수업의 상세내용을 조회하는 api ',
@@ -266,5 +252,3 @@ class TrainingUserSchedules(Resource):
 #             "center_location": center_location if center_location else "정보 없음",
 #             "center_name": center_name if center_name else "정보 없음"
 #         }
-
-

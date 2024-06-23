@@ -1,15 +1,17 @@
 import uuid
 
+from flask_jwt_extended import create_access_token
+
 from app import db, Trainer, Users, TrainerUser, Schedule, ChangeTicket
 from datetime import datetime, timedelta
 
 
 class TestDataFactory:
     @staticmethod
-    def create_trainer(trainer_social_id=uuid.uuid4().hex, name="Test Trainer", email="test@example.com", **kwargs):
+    def create_trainer(trainer_social_id=uuid.uuid4().hex, **kwargs):
         trainer = Trainer(
             trainer_social_id=trainer_social_id,
-            trainer_name=name,
+            trainer_name=kwargs.get('name', 'Test Trainer'),
             trainer_phone_number=kwargs.get('phone', '010-0000-0000'),
             trainer_gender=kwargs.get('gender', 'M'),
             trainer_birthday=kwargs.get('trainer_birthday', datetime.now().date()),
@@ -18,7 +20,7 @@ class TestDataFactory:
             lesson_price=kwargs.get('lesson_price', 10000),
             lesson_minutes=kwargs.get('lesson_minutes', 60),
             lesson_change_range=kwargs.get('lesson_change_range', 3),
-            trainer_email=email,
+            trainer_email=kwargs.get('email', 'test@example.com'),
             center_name=kwargs.get('center_name', 'Center'),
             center_location=kwargs.get('center_location', 'center_location'),
             center_number=kwargs.get('center_number', '02-555-5555'),
@@ -105,6 +107,18 @@ class TestDataFactory:
             for i in range(schedule_count)
         ]
         return trainer_user, schedules
+
+    @staticmethod
+    def create_user_auth_header(user_id):
+        identity = {"user_id": user_id}
+        access_token = create_access_token(identity=identity)
+        return {'Authorization': f'Bearer {access_token}'}
+
+    @staticmethod
+    def create_trainer_auth_header(trainer_id):
+        identity = {"trainer_id": trainer_id}
+        access_token = create_access_token(identity=identity)
+        return {'Authorization': f'Bearer {access_token}'}
 
 
 class ScheduleBuilder:
