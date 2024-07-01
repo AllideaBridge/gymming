@@ -1,5 +1,8 @@
+from app.common.constants import CHANGE_FROM_USER, CHANGE_FROM_TRAINER
 from app.entities.entity_schedule import Schedule
 from app.entities.entity_trainer_user import TrainerUser
+from app.entities.entity_trainer import Trainer
+from app.entities.entity_users import Users
 from app.entities.entity_change_ticket import ChangeTicket
 from database import db
 
@@ -35,3 +38,22 @@ class ChangeTicketRepository:
                           .join(TrainerUser, Schedule.trainer_user_id == TrainerUser.trainer_user_id)
                           .filter(TrainerUser.user_id == user_id, ChangeTicket.status == status).all())
         return change_tickets
+
+    # 유저가 보낸 요청 조회
+    def select_user_change_tickets(self, user_id, page=1, per_page=10):
+        return (db.session.query(
+            ChangeTicket.id,
+            Trainer.trainer_name,
+            ChangeTicket.change_type,
+            Schedule.schedule_start_time,
+            ChangeTicket.request_time,
+            ChangeTicket.created_at,
+            ChangeTicket.status,
+            ChangeTicket.description,
+            ChangeTicket.reject_reason
+        )
+                .join(Schedule)
+                .join(TrainerUser)
+                .join(Trainer)
+                .filter(TrainerUser.user_id == user_id, ChangeTicket.change_from == CHANGE_FROM_USER)
+                .paginate(page=page, per_page=per_page))
