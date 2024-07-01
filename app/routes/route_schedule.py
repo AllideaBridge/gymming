@@ -3,13 +3,33 @@ from datetime import datetime
 from flask import request
 from flask_restx import Namespace, Resource, fields
 from app.common.constants import DATETIMEFORMAT, DATEFORMAT
+from app.common.exceptions import ApplicationError
 from app.services.service_schedule import ScheduleService
 
 ns_schedule = Namespace('schedules', description='Schedules related operations', path='/schedules')
 
 
+@ns_schedule.route('')
+class Schedules(Resource):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.schedule_service = ScheduleService()
+
+    def post(self):
+        data = request.json
+        trainer_id = data.get('trainer_id')
+        user_id = data.get('user_id')
+        schedule_start_time = datetime.strptime(data.get('schedule_start_time'), DATETIMEFORMAT)
+        try:
+            result = self.schedule_service.create_schedule(trainer_id, user_id, schedule_start_time)
+        except ApplicationError as e:
+            return {'message': e.message}, 400
+
+        return result
+
+
 @ns_schedule.route('/<int:schedule_id>')
-class ScheduleResource(Resource):
+class Schedule(Resource):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.schedule_service = ScheduleService()

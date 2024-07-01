@@ -2,12 +2,13 @@ from calendar import monthrange
 from datetime import datetime, timedelta
 
 from app.common.constants import DATEFORMAT, SCHEDULE_MODIFIED, SCHEDULE_CANCELLED, SCHEDULE_TYPE_MONTH, \
-    SCHEDULE_TYPE_DAY, SCHEDULE_TYPE_WEEK, DATETIMEFORMAT
+    SCHEDULE_TYPE_DAY, SCHEDULE_TYPE_WEEK, DATETIMEFORMAT, SCHEDULE_SCHEDULED
 from app.common.exceptions import BadRequestError
 from app.repositories.repository_schedule import ScheduleRepository
 from app.repositories.repository_trainer_availability import TrainerAvailabilityRepository
 from app.repositories.repository_trainer_user import TrainerUserRepository
 from app.repositories.repository_trainer import TrainerRepository
+from app.entities.entity_schedule import Schedule
 
 
 class ScheduleService:
@@ -254,3 +255,28 @@ class ScheduleService:
             "center_name": schedule.center_name,
             "center_location": schedule.center_location,
         }
+
+    def create_schedule(self, trainer_id, user_id, schedule_start_time):
+        trainer_user = self.trainer_user_repository.select_by_trainer_id_and_user_id(trainer_id, user_id)
+        if not trainer_user:
+            raise BadRequestError("Trainer-User relationship not found")
+
+        # 스케쥴 충돌 여부
+        conflict_schedule = self.schedule_repository.select_conflict_schedule_by_trainer_id_and_request_time(trainer_id,
+                                                                                                             schedule_start_time)
+        if conflict_schedule is not None:
+            raise BadRequestError("Schedule is already exist")
+
+        # 수업 카운트 차감
+        if trainer_user.lesson_current_count < 1:
+            raise BadRequestError("There are no classes left.")
+
+        trainer_user.lesson_current_count -= 1
+
+        schedule = Schedule(
+            trainer_user_id=trainer_user.trainer_user_id,
+            schedule_start_time=schedule_start_time,
+            schedule_status=SCHEDULE_SCHEDULED
+        )
+        self.schedule_repository.insert_schedule(schedule)
+        return {"message": "success"}
