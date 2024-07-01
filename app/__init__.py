@@ -1,10 +1,10 @@
 import logging
-from datetime import timedelta
 
 from flask import Flask
 from flask_jwt_extended import JWTManager
 from flask_restx import Api
 
+from app.common.error_handlers import register_error_handlers
 from app.routes.route_auth import ns_auth
 from database import db
 from app.routes.route_users import ns_user
@@ -54,4 +54,5 @@ def create_app(env):
     with app.app_context():
         db.create_all()
 
+    register_error_handlers(app)
     return app
