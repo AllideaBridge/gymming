@@ -2,6 +2,8 @@ from datetime import datetime
 
 from flask import request
 from flask_restx import Namespace, Resource, fields
+from marshmallow import ValidationError
+
 from app.common.constants import DATETIMEFORMAT, DATEFORMAT
 from app.common.exceptions import ApplicationError
 from app.services.service_schedule import ScheduleService
@@ -38,10 +40,15 @@ class Schedule(Resource):
         return self.schedule_service.get_schedule_details(schedule_id)
 
     def put(self, schedule_id):
-        start_time = datetime.strptime(request.json['start_time'], DATETIMEFORMAT)
-        status = request.json['status']
+        try:
+            start_time = datetime.strptime(request.json['start_time'], DATETIMEFORMAT)
+            status = request.json['status']
 
-        return self.schedule_service.handle_change_user_schedule(schedule_id, start_time, status)
+            return self.schedule_service.handle_change_user_schedule(schedule_id, start_time, status)
+        except ApplicationError as e:
+            return {'message': e.message}, e.status_code
+        except ValidationError as e:
+            return {'message': '입력 데이터가 올바르지 않습니다.', 'errors': e.messages}, 400
 
     def delete(self, schedule_id):
         return self.schedule_service.delete_schedule(schedule_id)

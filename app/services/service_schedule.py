@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 from app.common.constants import DATEFORMAT, SCHEDULE_MODIFIED, SCHEDULE_CANCELLED, SCHEDULE_TYPE_MONTH, \
     SCHEDULE_TYPE_DAY, SCHEDULE_TYPE_WEEK, DATETIMEFORMAT, SCHEDULE_SCHEDULED
-from app.common.exceptions import BadRequestError
+from app.common.exceptions import BadRequestError, ApplicationError
 from app.repositories.repository_schedule import ScheduleRepository
 from app.repositories.repository_trainer_availability import TrainerAvailabilityRepository
 from app.repositories.repository_trainer_user import TrainerUserRepository
@@ -74,7 +74,7 @@ class ScheduleService:
 
         schedule = self.schedule_repository.select_schedule_by_id(schedule_id)
         if not schedule:
-            return {'error': 'Schedule not found'}, 404
+            raise ApplicationError(f"Schedule not found {schedule_id}", 404)
 
         trainer_user = self.trainer_user_repository.select_by_id(schedule.trainer_user_id)
         trainer_id = trainer_user.trainer_id
@@ -83,7 +83,7 @@ class ScheduleService:
 
         if conflict_schedule:
             # 충돌하는 스케줄이 있는 경우
-            return {'message': 'New schedule conflicts with existing schedules of the trainer'}, 400
+            raise ApplicationError(f"New schedule conflicts with existing schedules of the trainer", 400)
 
         schedule.schedule_status = SCHEDULE_MODIFIED
         schedule.schedule_start_time = start_time
@@ -95,7 +95,7 @@ class ScheduleService:
         schedule = self.schedule_repository.select_schedule_by_id(schedule_id)
 
         if not schedule:
-            return {'error': 'Schedule not found'}, 404
+            raise ApplicationError(f"Schedule not found {schedule_id}", 404)
 
         schedule.schedule_status = SCHEDULE_CANCELLED
         self.schedule_repository.insert_schedule(schedule)
@@ -106,7 +106,7 @@ class ScheduleService:
         deleted = self.schedule_repository.delete_schedule(schedule_id)
         if deleted:
             return {"message": "Schedule deleted successfully."}, 200
-        return {"message": "Schedule not found."}, 404
+        raise ApplicationError(f"Schedule not found {schedule_id}", 404)
 
     def handle_get_trainer_schedule(self, trainer_id, date, type):
         if type == SCHEDULE_TYPE_DAY:
