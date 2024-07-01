@@ -1,9 +1,9 @@
 from marshmallow import ValidationError
 
-from app.common.constants import CHANGE_TICKET_STATUS_APPROVED, CHANGE_TICKET_STATUS_REJECTED, CHANGE_FROM_USER, \
-    CHANGE_FROM_TRAINER, SCHEDULE_MODIFIED, CHANGE_TICKET_TYPE_MODIFY, CHANGE_TICKET_STATUS_CANCELED, DATETIMEFORMAT, \
+from app.common.constants import CHANGE_TICKET_STATUS_APPROVED, CHANGE_TICKET_STATUS_REJECTED, \
+    CHANGE_TICKET_TYPE_MODIFY, CHANGE_TICKET_STATUS_CANCELED, DATETIMEFORMAT, SCHEDULE_MODIFIED, SCHEDULE_CANCELLED, \
     CHANGE_TICKET_STATUS_WAITING
-from app.common.exceptions import ApplicationError, BadRequestError
+from app.common.exceptions import ApplicationError
 from app.entities.entity_change_ticket import ChangeTicket
 from app.entities.entity_schedule import Schedule
 from app.entities.entity_trainer import Trainer
@@ -42,30 +42,24 @@ class ChangeTicketService:
         self.change_ticket_repository.insert_change_ticket(new_change_ticket)
         return True
 
-    def _approve_change_ticket(self, change_ticket_id, data: UpdateChangeTicketRequest):
-        change_ticket = self.change_ticket_repository.select_change_ticket_by_id(change_ticket_id)
-
-        if data.change_from == CHANGE_FROM_TRAINER:
-            self.schedule_service.handle_change_user_schedule(change_ticket.schedule_id, data.start_time,
-                                                              SCHEDULE_MODIFIED)
-        elif data.change_from == CHANGE_FROM_USER:
-            self.schedule_service.handle_change_trainer_schedule(change_ticket.schedule_id, data.start_time,
-                                                                 SCHEDULE_MODIFIED)
-
     def handle_update_change_ticket(self, change_ticket_id, data: UpdateChangeTicketRequest):
         change_ticket_to_update = self.change_ticket_repository.select_change_ticket_by_id(change_ticket_id)
         if not change_ticket_to_update:
             raise ApplicationError(f"존재하지 않는 change ticket {change_ticket_id}", 400)
+        if change_ticket_to_update.status != CHANGE_TICKET_STATUS_WAITING:
+            raise ApplicationError(f"이미 처리된 Change Ticket 입니다. {change_ticket_id}", 400)
+
+        if data.status == CHANGE_TICKET_STATUS_APPROVED:
+            self.schedule_service.handle_change_user_schedule(
+                change_ticket_to_update.schedule_id, data.start_time, SCHEDULE_MODIFIED)
+        elif data.status == CHANGE_TICKET_STATUS_CANCELED:
+            self.schedule_service.handle_change_user_schedule(
+                change_ticket_to_update.schedule_id, data.start_time, SCHEDULE_CANCELLED)
+        elif data.status == CHANGE_TICKET_STATUS_REJECTED:
+            change_ticket_to_update.reject_reason = data.reject_reason
 
         change_ticket_to_update.description = data.change_reason
         change_ticket_to_update.status = data.status
-
-        if data.status == CHANGE_TICKET_STATUS_APPROVED:
-            self._approve_change_ticket(change_ticket_id, data)
-        elif data.status == CHANGE_TICKET_STATUS_REJECTED:
-            change_ticket_to_update.reject_reason = data.reject_reason
-        elif data.status == CHANGE_TICKET_STATUS_CANCELED:
-            pass
 
         self.change_ticket_repository.update_change_ticket()
 
