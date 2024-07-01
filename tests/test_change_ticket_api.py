@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from app import create_app, Trainer, TrainerUser, Users, Schedule, ChangeTicket
 from app.common.constants import CHANGE_TICKET_TYPE_CANCEL, CHANGE_TICKET_TYPE_MODIFY, CHANGE_TICKET_STATUS_WAITING, \
     CHANGE_TICKET_STATUS_REJECTED, CHANGE_TICKET_STATUS_APPROVED, SCHEDULE_CANCELLED, SCHEDULE_MODIFIED, \
-    SCHEDULE_SCHEDULED
+    SCHEDULE_SCHEDULED, CHANGE_FROM_USER, CHANGE_TICKET_STATUS_CANCELED
 from database import db
 from tests.test_data_factory import TestDataFactory, ChangeTicketBuilder
 
@@ -110,7 +110,6 @@ class TrainerScheduleTestCase(unittest.TestCase):
             .build()
             for _ in range(3)
         ]
-
 
         trainer_id = 1
         response = self.client.get(
@@ -235,3 +234,16 @@ class TrainerScheduleTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.get_json()['message'],
                          'New schedule conflicts with existing schedules of the trainer')
+
+    def test_get_change_ticket_history(self):
+        user = TestDataFactory.create_user()
+        size = 2
+        for _ in range(size):
+            ChangeTicketBuilder().with_user(user).with_change_from(CHANGE_FROM_USER).build()
+
+        response = self.client.get(f'/change-ticket/user/{user.user_id}/history')
+        data = response.get_json()
+        self.assertEqual(response.status_code, 200)
+        self.assertIsInstance(data, list)
+        self.assertEqual(len(data), size)
+        print(data)

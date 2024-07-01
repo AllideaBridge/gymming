@@ -1,8 +1,8 @@
-from flask import jsonify
+from flask import jsonify, request
 from flask_restx import Namespace, Resource
 from marshmallow import ValidationError
 
-from app.common.exceptions import ApplicationError
+from app.common.exceptions import ApplicationError, BadRequestError
 from app.routes.models.model_change_ticket import CreateChangeTicketRequest, UpdateChangeTicketRequest
 from app.services.service_change_ticket import ChangeTicketService
 
@@ -99,6 +99,20 @@ class ChangeTicketUser(Resource):
             return jsonify(change_ticket_list)
         except ValidationError as e:
             return {'message': '입력 데이터가 올바르지 않습니다.', 'errors': e.messages}, 400
+
+
+@ns_change_ticket.route('/user/<int:user_id>/history')
+class UserChangeTicketHistory(Resource):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.change_ticket_service = ChangeTicketService()
+
+    def get(self, user_id):
+        page = request.args.get('page')
+        result = self.change_ticket_service.get_user_change_ticket_history(user_id, page)
+        return result
+
+
 
 # 컨트롤러의 역할 : 유효성 검사
 # todo : 서비스 레이어로 비즈니스 로직 빼기.

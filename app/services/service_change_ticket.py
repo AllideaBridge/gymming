@@ -1,8 +1,9 @@
 from marshmallow import ValidationError
 
 from app.common.constants import CHANGE_TICKET_STATUS_APPROVED, CHANGE_TICKET_STATUS_REJECTED, CHANGE_FROM_USER, \
-    CHANGE_FROM_TRAINER, SCHEDULE_MODIFIED, CHANGE_TICKET_TYPE_MODIFY, CHANGE_TICKET_STATUS_CANCELED
-from app.common.exceptions import ApplicationError
+    CHANGE_FROM_TRAINER, SCHEDULE_MODIFIED, CHANGE_TICKET_TYPE_MODIFY, CHANGE_TICKET_STATUS_CANCELED, DATETIMEFORMAT, \
+    CHANGE_TICKET_STATUS_WAITING
+from app.common.exceptions import ApplicationError, BadRequestError
 from app.entities.entity_change_ticket import ChangeTicket
 from app.entities.entity_schedule import Schedule
 from app.entities.entity_trainer import Trainer
@@ -45,9 +46,11 @@ class ChangeTicketService:
         change_ticket = self.change_ticket_repository.select_change_ticket_by_id(change_ticket_id)
 
         if data.change_from == CHANGE_FROM_TRAINER:
-            self.schedule_service.handle_change_user_schedule(change_ticket.schedule_id, data.start_time, SCHEDULE_MODIFIED)
+            self.schedule_service.handle_change_user_schedule(change_ticket.schedule_id, data.start_time,
+                                                              SCHEDULE_MODIFIED)
         elif data.change_from == CHANGE_FROM_USER:
-            self.schedule_service.handle_change_trainer_schedule(change_ticket.schedule_id, data.start_time, SCHEDULE_MODIFIED)
+            self.schedule_service.handle_change_trainer_schedule(change_ticket.schedule_id, data.start_time,
+                                                                 SCHEDULE_MODIFIED)
 
     def handle_update_change_ticket(self, change_ticket_id, data: UpdateChangeTicketRequest):
         change_ticket_to_update = self.change_ticket_repository.select_change_ticket_by_id(change_ticket_id)
@@ -119,3 +122,17 @@ class ChangeTicketService:
             results.append(result)
 
         return results
+
+    def get_user_change_ticket_history(self, user_id, page=None):
+        change_tickets = self.change_ticket_repository.select_user_change_tickets(user_id, page)
+        return [{
+            "id": ticket.id,
+            "trainer_name": ticket.trainer_name,
+            "change_ticket_type": ticket.change_type,
+            "as_is_date": ticket.schedule_start_time.strftime(DATETIMEFORMAT),
+            "to_be_date": ticket.request_time.strftime(DATETIMEFORMAT),
+            "created_at": ticket.created_at.strftime(DATETIMEFORMAT),
+            "change_ticket_status": ticket.status,
+            "user_message": ticket.description,
+            "trainer_message": ticket.reject_reason
+        } for ticket in change_tickets]

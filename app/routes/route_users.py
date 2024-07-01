@@ -1,6 +1,7 @@
 from datetime import datetime
 from http import HTTPStatus
 
+from flask import request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask_restx import Namespace, Resource, fields
 
@@ -63,3 +64,17 @@ class UserListResource(Resource):
     def post(self):
         new_user = user_service.create_user(ns_user.payload)
         return new_user, 201
+
+
+@ns_user.route('/check')
+class UserCheck(Resource):
+
+    def get(self):
+        user_name = request.args.get('user_name')
+        user_phone_number = request.args.get('user_phone_number')
+
+        if not user_name or not user_phone_number:
+            raise BadRequestError("Both user_name and user_phone_number are required")
+
+        result = user_service.check_user_exists(user_name, user_phone_number)
+        return result

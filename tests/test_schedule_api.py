@@ -1,8 +1,9 @@
 import unittest
 from datetime import datetime, timedelta
 
-from app import create_app, Users, Schedule, Trainer, TrainerUser
+from app import create_app, Users, Schedule, Trainer, TrainerUser, register_error_handlers
 from app.common.constants import SCHEDULE_CANCELLED, SCHEDULE_SCHEDULED, DATETIMEFORMAT, SCHEDULE_MODIFIED
+from app.common.exceptions import BadRequestError
 from database import db
 from tests.test_data_factory import ScheduleBuilder, TestDataFactory
 
@@ -182,3 +183,98 @@ class ScheduleTestCase(unittest.TestCase):
         self.assertIn("trainer_name", data)
         self.assertIn("center_name", data)
         self.assertIn("center_location", data)
+
+    def test_create_schedule(self):
+        trainer = TestDataFactory.create_trainer()
+        user = TestDataFactory.create_user()
+        TestDataFactory.create_trainer_user(trainer, user)
+
+        data = {
+            'trainer_id': trainer.trainer_id,
+            'user_id': user.user_id,
+            'schedule_start_time': (datetime.now() + timedelta(days=1)).strftime(DATETIMEFORMAT)
+        }
+        response = self.client.post('/schedules', json=data)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json['message'], 'success')
+        print(response.get_json())
+        print(data)
+
+    def test_create_schedule_success(self):
+        # 준비
+        trainer = TestDataFactory.create_trainer()
+        user = TestDataFactory.create_user()
+        # 수업 횟수가 남아있음
+        lesson_current_count = 1
+        trainer_user = TestDataFactory.create_trainer_user(trainer, user, lesson_current_count=lesson_current_count)
+
+        data = {
+            'trainer_id': trainer.trainer_id,
+            'user_id': user.user_id,
+            'schedule_start_time': (datetime.now() + timedelta(days=1)).strftime(DATETIMEFORMAT)
+        }
+
+        # 실행
+        response = self.client.post('/schedules', json=data)
+
+        # 검증
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json['message'], 'success')
+
+        # 데이터베이스에 스케줄이 생성되었는지 확인
+        created_schedule = db.session.query(Schedule).filter_by(
+            trainer_user_id=trainer_user.trainer_user_id,
+            schedule_start_time=datetime.strptime(data['schedule_start_time'], DATETIMEFORMAT)
+        ).first()
+        self.assertIsNotNone(created_schedule)
+        self.assertEqual(created_schedule.schedule_status, SCHEDULE_SCHEDULED)
+
+        # 수업 횟수가 차감되었는지 확인
+        self.assertEqual(trainer_user.lesson_current_count, lesson_current_count - 1)
+
+    def test_create_schedule_conflict(self):
+        # 준비
+        trainer = TestDataFactory.create_trainer()
+        user = TestDataFactory.create_user()
+        # 수업 횟수가 남아있음
+        lesson_current_count = 1
+        TestDataFactory.create_trainer_user(trainer, user, lesson_current_count=lesson_current_count)
+
+        # 이미 존재하는 스케줄 생성
+        existing_schedule_time = datetime.now() + timedelta(days=1)
+        ScheduleBuilder().with_trainer(trainer).with_user(user).with_start_time(existing_schedule_time).build()
+
+        data = {
+            'trainer_id': trainer.trainer_id,
+            'user_id': user.user_id,
+            'schedule_start_time': existing_schedule_time.strftime(DATETIMEFORMAT)
+        }
+
+        # 실행
+        response = self.client.post('/schedules', json=data)
+
+
+        # 검증
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("Schedule is already exist", response.json['message'])
+
+    def test_create_schedule_no_lessons_left(self):
+        # 준비
+        trainer = TestDataFactory.create_trainer()
+        user = TestDataFactory.create_user()
+        # 수업 횟수가 남지 않음
+        lesson_current_count = 0
+        TestDataFactory.create_trainer_user(trainer, user, lesson_current_count=lesson_current_count)
+
+        data = {
+            'trainer_id': trainer.trainer_id,
+            'user_id': user.user_id,
+            'schedule_start_time': (datetime.now() + timedelta(days=1)).strftime(DATETIMEFORMAT)
+        }
+
+        # 실행
+        response = self.client.post('/schedules', json=data)
+
+        # 검증
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("There are no classes left", response.json['message'])

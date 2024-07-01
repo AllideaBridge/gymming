@@ -38,5 +38,14 @@ class UserService:
         user_repository.insert(new_user)
         return new_user
 
+    @staticmethod
+    def check_user_exists(user_name, user_phone_number):
+        user = user_repository.select_by_username_and_phone_number(user_name, user_phone_number)
+
+        if user:
+            return {"exists": True}
+        else:
+            return {"exists": False}
+
 
 user_service = UserService()
