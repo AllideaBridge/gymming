@@ -52,7 +52,11 @@ class TestDataFactory:
         if user is None:
             user = TestDataFactory.create_user()
 
-        trainer_user = TrainerUser(trainer_id=trainer.trainer_id, user_id=user.user_id)
+        trainer_user = TrainerUser(
+            trainer_id=trainer.trainer_id,
+            user_id=user.user_id,
+            lesson_current_count=kwargs.get('lesson_current_count', 1)
+        )
         db.session.add(trainer_user)
         db.session.commit()
         return trainer_user
@@ -163,6 +167,7 @@ class ChangeTicketBuilder:
         self.trainer = None
         self.user = None
         self.status = "status"
+        self.change_from = ""
 
     def with_trainer(self, trainer=None):
         self.trainer = trainer or TestDataFactory.create_trainer()
@@ -184,6 +189,10 @@ class ChangeTicketBuilder:
         self.status = status
         return self
 
+    def with_change_from(self, change_from):
+        self.change_from = change_from
+        return self
+
     def build(self):
         if self.schedule is None:
             self.schedule = (ScheduleBuilder()
@@ -191,4 +200,4 @@ class ChangeTicketBuilder:
                              .with_trainer(self.trainer)
                              .with_trainer_user(self.trainer_user)
                              .build())
-        return TestDataFactory.create_change_ticket(self.schedule, status=self.status)
+        return TestDataFactory.create_change_ticket(self.schedule, status=self.status, change_from=self.change_from)
