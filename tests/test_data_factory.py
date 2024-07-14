@@ -38,7 +38,6 @@ class TestDataFactory:
             user_name=name,
             user_gender=kwargs.get('gender', 'M'),
             user_phone_number=kwargs.get('phone', '010-1234-5678'),
-            user_profile_img_url=kwargs.get('profile_img', 'http://example.com/profile.jpg'),
             user_birthday=kwargs.get('user_birthday', datetime.now().date())
         )
         db.session.add(user)
