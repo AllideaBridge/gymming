@@ -6,6 +6,7 @@ from flask_restx import Api
 
 from app.common.error_handlers import register_error_handlers
 from app.routes.route_auth import ns_auth
+from app.routes.route_image import ns_image
 from database import db
 from app.routes.route_users import ns_user
 from app.routes.route_schedule import ns_schedule
@@ -31,6 +32,7 @@ def create_app(env):
     api.add_namespace(ns_change_ticket)
     api.add_namespace(ns_auth)
     api.add_namespace(ns_trainer_user)
+    api.add_namespace(ns_image)
 
     if env == "test":
         logging.basicConfig()

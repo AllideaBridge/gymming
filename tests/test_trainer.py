@@ -1,27 +1,12 @@
-import unittest
-from app import create_app
-from database import db
+import requests
+
+from tests import BaseTestCase
 from tests.test_data_factory import TestDataFactory
 
+from io import BytesIO
 
-class TrainerTestCase(unittest.TestCase):
-    app = None
-    app_context = None
 
-    @classmethod
-    def setUpClass(cls):
-        cls.app = create_app('test')
-        cls.app_context = cls.app.app_context()
-        cls.app_context.push()
-        db.drop_all()
-        db.create_all()
-        cls.client = cls.app.test_client()
-
-    def setUp(self):
-        db.session.begin_nested()
-
-    def tearDown(self):
-        db.session.rollback()
+class TrainerTestCase(BaseTestCase):
 
     def test_put_트레이너(self):
         trainer = TestDataFactory.create_trainer()
@@ -64,3 +49,17 @@ class TrainerTestCase(unittest.TestCase):
         response = self.client.put(f'/trainers/{trainer.trainer_id}', headers=headers, json=body)
 
         self.assertEqual(response.status_code, 200)
+
+    def test_트레이너_상세조회(self):
+        trainer = TestDataFactory.create_trainer()
+        headers = TestDataFactory.create_trainer_auth_header(trainer.trainer_id)
+        self.s3.put_object(Bucket='gymming', Key=f'trainer/{trainer.trainer_id}/profile',
+                           Body=b'trainer image file data')
+
+        response = self.client.get(f'/trainers/{trainer.trainer_id}', headers=headers)
+        print(response.get_json())
+
+        data = response.get_json()
+        self.assertEqual(response.status_code, 200)
+        file_data = requests.get(data['trainer_profile_img_url']).content
+        self.assertEqual(file_data, b'trainer image file data')
