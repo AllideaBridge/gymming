@@ -1,64 +1,46 @@
 from datetime import datetime
 
+import boto3
 from flask import request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask_restx import Namespace, Resource, fields
 
 from app.common.constants import DATETIMEFORMAT, DATEFORMAT
-from app.common.exceptions import UnAuthorizedError
+from app.common.exceptions import UnAuthorizedError, BadRequestError
 from app.entities.entity_trainer import Trainer
 from app.entities.entity_users import Users
 from app.entities.entity_schedule import Schedule
 from app.entities.entity_trainer_user import TrainerUser
+from app.models.model_trainer import trainer_show_model
+from app.services.service_image import ImageService
 from app.services.service_trainer import TrainerService
 from database import db
 
 ns_trainer = Namespace('trainers', description='Trainer API')
 
-# todo : 트레이너 상세조회시 엔터티 필드 최신화
-trainer_model = ns_trainer.model('Trainer', {
-    'trainer_id': fields.Integer(readOnly=True, description='Trainer ID'),
-    'user_id': fields.Integer(required=True, description='User ID of the Trainer'),
-    'center_id': fields.Integer(description='Center ID (nullable)'),
-    'trainer_pr_url': fields.String(description='Trainer Profile URL (nullable)'),
-    'trainer_pt_price': fields.Integer(description='Trainer PT Price (nullable)'),
-    'certification': fields.String(description='Trainer Certification (nullable)'),
-    'trainer_education': fields.String(description='Trainer Education (nullable)')
-})
-
-
-@ns_trainer.route('')
-class TrainerListResource(Resource):
-    @ns_trainer.marshal_list_with(trainer_model)
-    def get(self):
-        # 모든 트레이너 정보 조회
-        trainers = Trainer.query.all()
-        return trainers
-
-    @ns_trainer.expect(trainer_model, validate=True)
-    @ns_trainer.marshal_with(trainer_model, code=201)
-    def post(self):
-        # 새로운 트레이너 추가
-        data = ns_trainer.payload
-        trainer = Trainer(
-            user_id=data['user_id'],
-            center_id=data.get('center_id'),
-            trainer_pr_url=data.get('trainer_pr_url'),
-            trainer_pt_price=data.get('trainer_pt_price'),
-            certification=data.get('certification'),
-            trainer_education=data.get('trainer_education')
-        )
-        db.session.add(trainer)
-        db.session.commit()
-        return trainer, 201
-
 
 @ns_trainer.route('/<int:trainer_id>')
 class TrainerResource(Resource):
-    @ns_trainer.marshal_with(trainer_model)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.image_service = ImageService()
+
+    @ns_trainer.marshal_with(trainer_show_model)
+    @jwt_required()
     def get(self, trainer_id):
-        # 특정 트레이너 정보 조회
+        current_trainer = get_jwt_identity()
+
+        if trainer_id != current_trainer['trainer_id']:
+            raise UnAuthorizedError(message="유효하지 않는 id입니다.")
+
         trainer = Trainer.query.filter_by(trainer_id=trainer_id).first()
+        if trainer is None:
+            raise BadRequestError("존재하지 않는 트레이너 입니다.")
+
+        presigned_url = self.image_service.get_presigned_url(f'trainer/{trainer.trainer_id}/profile')
+        if presigned_url is not None:
+            trainer.trainer_profile_img_url = presigned_url
+
         return trainer
 
     # @ns_trainer.expect(trainer_model, validate=True)
@@ -224,6 +206,7 @@ class TrainingUserSchedules(Resource):
             ]
         }
 
+
 # @ns_trainer.route('/trainer-user/schedule/<int:schedule_id>')
 # class TrainingUserSchedule(Resource):
 #     @ns_trainer.doc(description='트레이너가 회원을 조회한 화면에서 수업 했던 날짜를 클릭하여 해당 수업의 상세내용을 조회하는 api ',
@@ -252,3 +235,6 @@ class TrainingUserSchedules(Resource):
 #             "center_location": center_location if center_location else "정보 없음",
 #             "center_name": center_name if center_name else "정보 없음"
 #         }
+
+
+

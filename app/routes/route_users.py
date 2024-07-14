@@ -7,6 +7,8 @@ from flask_restx import Namespace, Resource, fields
 
 from app.common.constants import DATEFORMAT
 from app.common.exceptions import BadRequestError, UnAuthorizedError
+from app.models.model_user import user_show_response
+from app.services.service_image import ImageService
 from app.services.service_user import user_service
 
 ns_user = Namespace('users', description='User API')
@@ -25,7 +27,11 @@ user_model = ns_user.model('Users', {
 
 @ns_user.route('/<int:user_id>')
 class UserResource(Resource):
-    @ns_user.marshal_with(user_model)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.image_service = ImageService()
+
+    @ns_user.marshal_with(user_show_response)
     @jwt_required()
     def get(self, user_id):
         current_user = get_jwt_identity()
@@ -33,7 +39,15 @@ class UserResource(Resource):
         if user_id != current_user['user_id']:
             raise UnAuthorizedError(message="유효하지 않는 id입니다.")
 
-        return user_service.get_user(user_id)
+        user = user_service.get_user(user_id)
+        if user is None:
+            raise BadRequestError("존재하지 않는 유저입니다.")
+
+        presigned_url = self.image_service.get_presigned_url(f'user/{user.user_id}/profile')
+
+        if presigned_url is not None:
+            user.user_profile_img_url = presigned_url
+        return user
 
     @ns_user.expect(user_model)
     @ns_user.marshal_with(user_model)
@@ -69,6 +83,8 @@ class UserListResource(Resource):
 @ns_user.route('/check')
 class UserCheck(Resource):
 
+    # 해당 api는 트레이너가 요청하는 api.
+    @jwt_required()
     def get(self):
         user_name = request.args.get('user_name')
         user_phone_number = request.args.get('user_phone_number')
