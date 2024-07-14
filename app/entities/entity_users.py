@@ -8,6 +8,5 @@ class Users(db.Model):
     user_name = db.Column(db.String(20), nullable=True)
     user_gender = db.Column(db.String(5), nullable=True)
     user_phone_number = db.Column(db.String(20), nullable=True)
-    user_profile_img_url = db.Column(db.String(255), nullable=True)
     user_delete_flag = db.Column(db.Boolean, default=False)
     user_birthday = db.Column(db.Date, nullable=True)
