@@ -2,8 +2,8 @@ from marshmallow import ValidationError
 
 from app.common.constants import CHANGE_TICKET_STATUS_APPROVED, CHANGE_TICKET_STATUS_REJECTED, \
     CHANGE_TICKET_TYPE_MODIFY, CHANGE_TICKET_STATUS_CANCELED, DATETIMEFORMAT, SCHEDULE_MODIFIED, SCHEDULE_CANCELLED, \
-    CHANGE_TICKET_STATUS_WAITING
-from app.common.exceptions import ApplicationError
+    CHANGE_TICKET_STATUS_WAITING, const
+from app.common.exceptions import ApplicationError, BadRequestError
 from app.entities.entity_change_ticket import ChangeTicket
 from app.entities.entity_schedule import Schedule
 from app.entities.entity_trainer import Trainer
@@ -11,6 +11,7 @@ from app.entities.entity_trainer_user import TrainerUser
 from app.entities.entity_users import Users
 from app.repositories.repository_change_ticket import ChangeTicketRepository
 from app.repositories.repository_schedule import ScheduleRepository
+from app.repositories.repository_trainer import TrainerRepository
 from app.repositories.repository_trainer_user import TrainerUserRepository
 from app.repositories.repository_users import UserRepository
 from app.routes.models.model_change_ticket import CreateChangeTicketRequest, UpdateChangeTicketRequest
@@ -24,9 +25,13 @@ class ChangeTicketService:
         self.schedule_service = ScheduleService()
         self.user_repository = UserRepository()
         self.trainer_user_repository = TrainerUserRepository()
+        self.trainer_repository = TrainerRepository()
 
     def get_change_ticket_by_id(self, change_ticket_id) -> ChangeTicket:
-        return self.change_ticket_repository.select_change_ticket_by_id(change_ticket_id)
+        result = self.change_ticket_repository.select_change_ticket_by_id(change_ticket_id)
+        if not result:
+            raise BadRequestError(message=f"존재하지 않는 Change Ticket 입니다. {change_ticket_id}")
+        return result
 
     def create_change_ticket(self, data: CreateChangeTicketRequest):
         if self.schedule_repository.select_schedule_by_id(data.schedule_id) is None:
@@ -50,8 +55,12 @@ class ChangeTicketService:
             raise ApplicationError(f"이미 처리된 Change Ticket 입니다. {change_ticket_id}", 400)
 
         if data.status == CHANGE_TICKET_STATUS_APPROVED:
-            self.schedule_service.handle_change_user_schedule(
-                change_ticket_to_update.schedule_id, data.start_time, SCHEDULE_MODIFIED)
+            if change_ticket_to_update.change_type == const.CHANGE_TICKET_TYPE_CANCEL:
+                self.schedule_service.handle_change_user_schedule(
+                    change_ticket_to_update.schedule_id, data.start_time, SCHEDULE_CANCELLED)
+            elif change_ticket_to_update.change_type == const.CHANGE_TICKET_TYPE_MODIFY:
+                self.schedule_service.handle_change_user_schedule(
+                    change_ticket_to_update.schedule_id, data.start_time, SCHEDULE_MODIFIED)
         elif data.status == CHANGE_TICKET_STATUS_CANCELED:
             self.schedule_service.handle_change_user_schedule(
                 change_ticket_to_update.schedule_id, data.start_time, SCHEDULE_CANCELLED)
@@ -71,6 +80,8 @@ class ChangeTicketService:
         self.change_ticket_repository.delete_change_ticket(change_ticket)
 
     def get_change_ticket_list_by_trainer(self, trainer_id, status, page):
+        if not self.trainer_repository.select_trainer_by_id(trainer_id):
+            raise BadRequestError("존재하지 않는 트레이너 입니다.")
         change_tickets = self.change_ticket_repository.select_change_tickets_by_trainer_id(trainer_id, status)
 
         results = []
