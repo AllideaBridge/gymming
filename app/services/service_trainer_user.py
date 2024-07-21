@@ -8,6 +8,7 @@ from app.repositories.repository_trainer_user import trainer_user_repository
 from app.repositories.repository_users import user_repository
 from app.routes.models.model_trainer_user import UsersRelatedTrainerResponse, CreateTrainerUserRelationRequest, \
     TrainersRelatedUserResponse, UserDetailRelatedTrainerResponse, UpdateTrainerUserRequest
+from app.services.service_image import ImageService
 
 
 class TrainerUserService:
@@ -15,6 +16,7 @@ class TrainerUserService:
         self.tu_repository = trainer_user_repository
         self.user_repository = user_repository
         self.trainer_repository = trainer_repository
+        self.image_service = ImageService()
 
     def get_users_related_trainer(self, trainer_id: int, delete_flag: bool = False):
         trainer = self.trainer_repository.select_trainer_by_id(trainer_id)
@@ -25,6 +27,8 @@ class TrainerUserService:
 
         results = []
         for trainer_user, user in entities:
+            user_profile_img_url = self.image_service.get_presigned_url(f'user/{user.user_id}/profile')
+            user.user_profile_img_url = user_profile_img_url
             results.append(UsersRelatedTrainerResponse.to_dict(trainer_user, user))
         return results
 
@@ -37,6 +41,8 @@ class TrainerUserService:
 
         results = []
         for trainer_user, trainer in entities:
+            trainer_profile_img_url = self.image_service.get_presigned_url(f'trainer/{trainer.trainer_id}/profile')
+            trainer.trainer_profile_img_url = trainer_profile_img_url
             results.append(TrainersRelatedUserResponse.to_dict(trainer_user, trainer))
         return results
 
@@ -52,6 +58,9 @@ class TrainerUserService:
         trainer_user = self.tu_repository.select_by_trainer_id_and_user_id(trainer_id=trainer_id, user_id=user_id)
         if not trainer_user:
             raise BadRequestError(f"해당 트레이너에게 트레이닝 받는 유저가 없습니다. Trainer_id: {trainer_id}, User_id: {user_id}")
+
+        user_profile_img_url = self.image_service.get_presigned_url(f'user/{user.user_id}/profile')
+        user.user_profile_img_url = user_profile_img_url
 
         return UserDetailRelatedTrainerResponse.to_dict(user, trainer_user)
 

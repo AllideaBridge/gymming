@@ -49,7 +49,7 @@ class UsersRelatedTrainerResponse:
 class TrainersRelatedUserResponse:
     trainer_id: int
     trainer_name: str
-    trainer_pr_image_url: str
+    trainer_profile_img_url: str
     lesson_total_count: int
     lesson_current_count: int
     center_name: str
@@ -60,7 +60,7 @@ class TrainersRelatedUserResponse:
         return {
             "trainer_id": trainer.trainer_id,
             "trainer_name": trainer.trainer_name,
-            "trainer_pr_image_url": trainer.trainer_pr_url,
+            "trainer_profile_img_url": trainer.trainer_profile_img_url,
             "lesson_total_count": trainer_user.lesson_total_count,
             "lesson_current_count": trainer_user.lesson_current_count,
             "center_name": "Center 아직 적용 안함",
@@ -73,8 +73,7 @@ class UserDetailRelatedTrainerResponse:
     email: str
     gender: str
     phone_number: str
-    profile_img_url: str
-    login_platform: str
+    user_profile_img_url: str
     delete_flag: bool
     birthday: str
     lesson_total_count: int
@@ -91,8 +90,7 @@ class UserDetailRelatedTrainerResponse:
             "email": user.user_email,
             "gender": user.user_gender,
             "phone_number": user.user_phone_number,
-            "profile_img_url": user.user_profile_img_url,
-            "login_platform": user.user_social_id,
+            "user_profile_img_url": user.user_profile_img_url,
             "delete_flag": user.user_delete_flag,
             "birthday": user.user_birthday,
             "lesson_total_count": trainer_user.lesson_total_count,
