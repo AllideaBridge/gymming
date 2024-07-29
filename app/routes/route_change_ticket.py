@@ -62,6 +62,7 @@ class ChangeTicketWithID(Resource):
         except BadRequestError as e:
             return {'message': e.message}, 400
 
+    @jwt_required()
     def put(self, change_ticket_id):
         try:
             body = UpdateChangeTicketRequest(ns_change_ticket.payload)
@@ -74,6 +75,7 @@ class ChangeTicketWithID(Resource):
         except ValidationError as e:
             return {'message': '입력 데이터가 올바르지 않습니다.', 'errors': e.messages}, 400
 
+    @jwt_required()
     def delete(self, change_ticket_id):
         try:
             self.change_ticket_service.delete_change_ticket(change_ticket_id)
@@ -123,6 +125,7 @@ class ChangeTicketUser(Resource):
         super().__init__(*args, **kwargs)
         self.change_ticket_service = ChangeTicketService()
 
+    @jwt_required()
     def get(self, user_id):
         try:
             parser = ns_change_ticket.parser()
@@ -144,6 +147,7 @@ class UserChangeTicketHistory(Resource):
         super().__init__(*args, **kwargs)
         self.change_ticket_service = ChangeTicketService()
 
+    @jwt_required()
     def get(self, user_id):
         page = request.args.get('page')
         result = self.change_ticket_service.get_user_change_ticket_history(user_id, page)
