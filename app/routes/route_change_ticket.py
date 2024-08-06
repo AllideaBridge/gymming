@@ -5,7 +5,8 @@ from marshmallow import ValidationError
 
 from app.common.constants import const
 from app.common.exceptions import ApplicationError, UnAuthorizedError, BadRequestError
-from app.routes.models.model_change_ticket import CreateChangeTicketRequest, UpdateChangeTicketRequest
+from app.models.model_change_ticket import ChangeTicketResponse
+from app.models.model_change_ticket import CreateChangeTicketRequest, UpdateChangeTicketRequest
 from app.services.service_change_ticket import ChangeTicketService
 
 ns_change_ticket = Namespace('change-ticket', description='Change ticket related operations')
@@ -46,6 +47,7 @@ class ChangeTicketWithID(Resource):
         super().__init__(*args, **kwargs)
         self.change_ticket_service = ChangeTicketService()
 
+    @ns_change_ticket.marshal_with(ChangeTicketResponse.change_ticket)
     @jwt_required()
     def get(self, change_ticket_id):
         try:
@@ -54,7 +56,7 @@ class ChangeTicketWithID(Resource):
                 raise UnAuthorizedError(message="유효하지 않는 id입니다.")
 
             change_ticket = self.change_ticket_service.get_change_ticket_by_id(change_ticket_id)
-            return jsonify(change_ticket.to_dict())
+            return change_ticket
         except ValidationError as e:
             return {'message': '입력 데이터가 올바르지 않습니다.', 'errors': e.messages}, 400
         except UnAuthorizedError as e:
@@ -92,6 +94,7 @@ class ChangeTicketTrainer(Resource):
         super().__init__(*args, **kwargs)
         self.change_ticket_service = ChangeTicketService()
 
+    @ns_change_ticket.marshal_list_with(ChangeTicketResponse.trainer_receive_change_ticket_list)
     @jwt_required()
     def get(self, trainer_id):
         try:
@@ -110,7 +113,7 @@ class ChangeTicketTrainer(Resource):
                     trainer_id, status, args.get('page')
                 )
                 change_ticket_list.extend(result)
-            return jsonify(change_ticket_list)
+            return change_ticket_list
         except ValidationError as e:
             return {'message': '입력 데이터가 올바르지 않습니다.', 'errors': e.messages}, 400
         except BadRequestError as e:
@@ -125,6 +128,7 @@ class ChangeTicketUser(Resource):
         super().__init__(*args, **kwargs)
         self.change_ticket_service = ChangeTicketService()
 
+    @ns_change_ticket.marshal_list_with(ChangeTicketResponse.user_receive_change_ticket_list)
     @jwt_required()
     def get(self, user_id):
         try:
@@ -136,7 +140,7 @@ class ChangeTicketUser(Resource):
             change_ticket_list = self.change_ticket_service.get_change_ticket_list_by_user(
                 user_id, args.get('status'), args.get('page')
             )
-            return jsonify(change_ticket_list)
+            return change_ticket_list
         except ValidationError as e:
             return {'message': '입력 데이터가 올바르지 않습니다.', 'errors': e.messages}, 400
 
@@ -147,6 +151,7 @@ class UserChangeTicketHistory(Resource):
         super().__init__(*args, **kwargs)
         self.change_ticket_service = ChangeTicketService()
 
+    @ns_change_ticket.marshal_list_with(ChangeTicketResponse.user_send_change_ticket_list)
     @jwt_required()
     def get(self, user_id):
         page = request.args.get('page')

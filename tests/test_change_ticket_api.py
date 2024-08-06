@@ -10,6 +10,19 @@ from tests.test_data_factory import TestDataFactory, ChangeTicketBuilder
 
 
 class TestChangeTicketApi(BaseTestCase):
+    def test_변경티켓_단건조회(self):
+        user = TestDataFactory.create_user()
+        TestDataFactory.create_change_ticket(
+            change_from=const.CHANGE_FROM_USER,
+            change_type=const.CHANGE_TICKET_TYPE_MODIFY
+        )
+
+        headers = TestDataFactory.create_user_auth_header(user.user_id)
+        response = self.client.get(f'/change-ticket/1', headers=headers)
+
+        result = response.get_json()
+        self.assertEqual(1, result['id'])
+
     def test_유저_티켓생성(self):
         user = TestDataFactory.create_user()
         schedule = TestDataFactory.create_schedule()

@@ -14,7 +14,7 @@ from app.repositories.repository_schedule import ScheduleRepository
 from app.repositories.repository_trainer import TrainerRepository
 from app.repositories.repository_trainer_user import TrainerUserRepository
 from app.repositories.repository_users import UserRepository
-from app.routes.models.model_change_ticket import CreateChangeTicketRequest, UpdateChangeTicketRequest
+from app.models.model_change_ticket import CreateChangeTicketRequest, UpdateChangeTicketRequest
 from app.services.service_schedule import ScheduleService
 
 
