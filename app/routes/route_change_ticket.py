@@ -159,7 +159,6 @@ class UserChangeTicketHistory(Resource):
         return result
 
 # 컨트롤러의 역할 : 유효성 검사
-# todo : 서비스 레이어로 비즈니스 로직 빼기.
 # todo : 중앙집중식 에러 처리. 에러 헨들러 작성.
 # todo : 로깅.
 # todo : 환경 변수 적용
