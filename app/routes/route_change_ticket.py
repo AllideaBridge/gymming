@@ -1,4 +1,4 @@
-from flask import jsonify, request
+from flask import request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask_restx import Namespace, Resource
 from marshmallow import ValidationError
@@ -8,6 +8,7 @@ from app.common.exceptions import ApplicationError, UnAuthorizedError, BadReques
 from app.models.model_change_ticket import ChangeTicketResponse
 from app.models.model_change_ticket import CreateChangeTicketRequest, UpdateChangeTicketRequest
 from app.services.service_change_ticket import ChangeTicketService
+from app.services.service_factory import ServiceFactory
 
 ns_change_ticket = Namespace('change-ticket', description='Change ticket related operations')
 
@@ -16,7 +17,7 @@ ns_change_ticket = Namespace('change-ticket', description='Change ticket related
 class ChangeTicket(Resource):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.change_ticket_service = ChangeTicketService()
+        self.change_ticket_service = ServiceFactory.change_ticket_service()
 
     @jwt_required()
     def post(self):
@@ -45,7 +46,7 @@ class ChangeTicket(Resource):
 class ChangeTicketWithID(Resource):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.change_ticket_service = ChangeTicketService()
+        self.change_ticket_service = ServiceFactory.change_ticket_service()
 
     @ns_change_ticket.marshal_with(ChangeTicketResponse.change_ticket)
     @jwt_required()
@@ -92,7 +93,7 @@ class ChangeTicketWithID(Resource):
 class ChangeTicketTrainer(Resource):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.change_ticket_service = ChangeTicketService()
+        self.change_ticket_service = ServiceFactory.change_ticket_service()
 
     @ns_change_ticket.marshal_list_with(ChangeTicketResponse.trainer_receive_change_ticket_list)
     @jwt_required()
@@ -126,7 +127,7 @@ class ChangeTicketTrainer(Resource):
 class ChangeTicketUser(Resource):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.change_ticket_service = ChangeTicketService()
+        self.change_ticket_service = ServiceFactory.change_ticket_service()
 
     @ns_change_ticket.marshal_list_with(ChangeTicketResponse.user_receive_change_ticket_list)
     @jwt_required()
@@ -149,7 +150,7 @@ class ChangeTicketUser(Resource):
 class UserChangeTicketHistory(Resource):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.change_ticket_service = ChangeTicketService()
+        self.change_ticket_service = ServiceFactory.change_ticket_service()
 
     @ns_change_ticket.marshal_list_with(ChangeTicketResponse.user_send_change_ticket_list)
     @jwt_required()

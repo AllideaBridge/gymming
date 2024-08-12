@@ -9,26 +9,21 @@ from app.entities.entity_schedule import Schedule
 from app.entities.entity_trainer import Trainer
 from app.entities.entity_trainer_user import TrainerUser
 from app.entities.entity_users import Users
-from app.repositories.repository_change_ticket import ChangeTicketRepository
-from app.repositories.repository_schedule import ScheduleRepository
-from app.repositories.repository_trainer import TrainerRepository
-from app.repositories.repository_trainer_user import TrainerUserRepository
-from app.repositories.repository_users import UserRepository
 from app.models.model_change_ticket import CreateChangeTicketRequest, UpdateChangeTicketRequest
-from app.services.service_factory import ServiceFactory
 
 
 class ChangeTicketService:
-    def __init__(self):
-        self.change_ticket_repository = ChangeTicketRepository()
-        self.schedule_repository = ScheduleRepository()
-        self.schedule_service = ServiceFactory.schedule_service()
-        self.user_repository = UserRepository()
-        self.trainer_user_repository = TrainerUserRepository()
-        self.trainer_repository = TrainerRepository()
+    def __init__(self, change_ticket_repository, schedule_repository, schedule_service, user_repository,
+                 trainer_user_repository, trainer_repository):
+        self.change_ticket_repository = change_ticket_repository
+        self.schedule_repository = schedule_repository
+        self.schedule_service = schedule_service
+        self.user_repository = user_repository
+        self.trainer_user_repository = trainer_user_repository
+        self.trainer_repository = trainer_repository
 
     def get_change_ticket_by_id(self, change_ticket_id) -> ChangeTicket:
-        result = self.change_ticket_repository.select_change_ticket_by_id(change_ticket_id)
+        result = self.change_ticket_repository.get(change_ticket_id)
         if not result:
             raise BadRequestError(message=f"존재하지 않는 Change Ticket 입니다. {change_ticket_id}")
         return result
@@ -44,11 +39,11 @@ class ChangeTicketService:
             description=data.change_reason,
             request_time=data.start_time
         )
-        self.change_ticket_repository.insert_change_ticket(new_change_ticket)
+        self.change_ticket_repository.create(new_change_ticket)
         return True
 
     def handle_update_change_ticket(self, change_ticket_id, data: UpdateChangeTicketRequest):
-        change_ticket_to_update = self.change_ticket_repository.select_change_ticket_by_id(change_ticket_id)
+        change_ticket_to_update = self.change_ticket_repository.get(change_ticket_id)
         if not change_ticket_to_update:
             raise ApplicationError(f"존재하지 않는 change ticket {change_ticket_id}", 400)
         if change_ticket_to_update.status != CHANGE_TICKET_STATUS_WAITING:
@@ -70,14 +65,14 @@ class ChangeTicketService:
         change_ticket_to_update.description = data.change_reason
         change_ticket_to_update.status = data.status
 
-        self.change_ticket_repository.update_change_ticket()
+        self.change_ticket_repository.update(change_ticket_to_update)
 
     def delete_change_ticket(self, change_ticket_id):
-        change_ticket = self.change_ticket_repository.select_change_ticket_by_id(change_ticket_id)
+        change_ticket = self.change_ticket_repository.get(change_ticket_id)
         if not change_ticket:
             raise ApplicationError(f"존재하지 않는 change ticket {change_ticket_id}", 400)
 
-        self.change_ticket_repository.delete_change_ticket(change_ticket)
+        self.change_ticket_repository.delete(change_ticket)
 
     def get_change_ticket_list_by_trainer(self, trainer_id, status, page):
         if not self.trainer_repository.get(trainer_id):
