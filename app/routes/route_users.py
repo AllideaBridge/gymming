@@ -7,9 +7,11 @@ from flask_restx import Namespace, Resource, fields
 
 from app.common.constants import DATEFORMAT
 from app.common.exceptions import BadRequestError, UnAuthorizedError
+from app.entities.entity_user_fcm_token import UserFcmToken
+from app.models.model_auth import FcmAuthRequest
 from app.models.model_user import user_show_response
+from app.services.service_factory import ServiceFactory
 from app.services.service_image import ImageService
-from app.services.service_user import user_service
 
 ns_user = Namespace('users', description='User API')
 
@@ -30,6 +32,7 @@ class UserResource(Resource):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.image_service = ImageService()
+        self.user_service = ServiceFactory.user_service()
 
     @ns_user.marshal_with(user_show_response)
     @jwt_required()
@@ -39,7 +42,7 @@ class UserResource(Resource):
         if user_id != current_user['user_id']:
             raise UnAuthorizedError(message="유효하지 않는 id입니다.")
 
-        user = user_service.get_user(user_id)
+        user = self.user_service.get_user(user_id)
         if user is None:
             raise BadRequestError("존재하지 않는 유저입니다.")
 
@@ -58,7 +61,7 @@ class UserResource(Resource):
         if user_id != current_user['user_id']:
             raise UnAuthorizedError(message="유효하지 않는 id입니다.")
 
-        user = user_service.get_user(user_id)
+        user = self.user_service.get_user(user_id)
         if user is None:
             raise BadRequestError(message="존재하지 않는 유저입니다.")
 
@@ -67,21 +70,28 @@ class UserResource(Resource):
         if update_data.get('user_birthday') is not None:
             update_data['user_birthday'] = datetime.strptime(update_data['user_birthday'], DATEFORMAT).date()
 
-        updated_user = user_service.update_user(user, update_data)
+        updated_user = self.user_service.update_user(user, update_data)
         return updated_user
 
 
 @ns_user.route('')
 class UserListResource(Resource):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.user_service = ServiceFactory.user_service()
+
     @ns_user.expect(user_model, validate=True)
     @ns_user.marshal_with(user_model, code=201)
     def post(self):
-        new_user = user_service.create_user(ns_user.payload)
+        new_user = self.user_service.create_user(ns_user.payload)
         return new_user, 201
 
 
 @ns_user.route('/check')
 class UserCheck(Resource):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.user_service = ServiceFactory.user_service()
 
     # 해당 api는 트레이너가 요청하는 api.
     @jwt_required()
@@ -92,5 +102,23 @@ class UserCheck(Resource):
         if not user_name or not user_phone_number:
             raise BadRequestError("Both user_name and user_phone_number are required")
 
-        result = user_service.check_user_exists(user_name, user_phone_number)
+        result = self.user_service.check_user_exists(user_name, user_phone_number)
         return result
+
+
+@ns_user.route('/<int:user_id>/fcm')
+class FcmUserResource(Resource):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.user_service = ServiceFactory.user_service()
+
+    @jwt_required()
+    def post(self, user_id):
+        current_user = get_jwt_identity()
+
+        if user_id != current_user['user_id']:
+            raise UnAuthorizedError(message="유효하지 않는 id입니다.")
+
+        body = FcmAuthRequest(**request.get_json())
+
+        self.user_service.create_user_fcm_token(user_id=user_id, body=body)

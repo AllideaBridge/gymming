@@ -3,9 +3,9 @@ from datetime import datetime
 from app.common.exceptions import BadRequestError
 from app.entities.entity_trainer_user import TrainerUser
 from app.entities.entity_users import Users
-from app.repositories.repository_trainer import trainer_repository
+from app.repositories.repository_trainer import TrainerRepository
 from app.repositories.repository_trainer_user import trainer_user_repository
-from app.repositories.repository_users import user_repository
+from app.repositories.repository_users import UserRepository
 from app.routes.models.model_trainer_user import UsersRelatedTrainerResponse, CreateTrainerUserRelationRequest, \
     TrainersRelatedUserResponse, UserDetailRelatedTrainerResponse, UpdateTrainerUserRequest
 from app.services.service_image import ImageService
@@ -14,12 +14,13 @@ from app.services.service_image import ImageService
 class TrainerUserService:
     def __init__(self):
         self.tu_repository = trainer_user_repository
-        self.user_repository = user_repository
-        self.trainer_repository = trainer_repository
+        from database import db
+        self.user_repository = UserRepository(db=db)
+        self.trainer_repository = TrainerRepository(db=db)
         self.image_service = ImageService()
 
     def get_users_related_trainer(self, trainer_id: int, delete_flag: bool = False):
-        trainer = self.trainer_repository.select_trainer_by_id(trainer_id)
+        trainer = self.trainer_repository.get(trainer_id)
         if not trainer:
             raise BadRequestError("트레이너가 존재하지 않습니다.")
 
@@ -33,7 +34,7 @@ class TrainerUserService:
         return results
 
     def get_trainers_related_user(self, user_id):
-        user = self.user_repository.select_by_id(user_id)
+        user = self.user_repository.get(user_id)
         if not user:
             raise BadRequestError("유저가 존재하지 않습니다.")
 
@@ -47,11 +48,11 @@ class TrainerUserService:
         return results
 
     def get_user_detail_related_trainer(self, trainer_id, user_id):
-        user = self.user_repository.select_by_id(user_id)
+        user = self.user_repository.get(user_id)
         if not user:
             raise BadRequestError(f"유저가 존재하지 않습니다. User_id: {user_id}")
 
-        trainer = self.trainer_repository.select_trainer_by_id(trainer_id)
+        trainer = self.trainer_repository.get(trainer_id)
         if not trainer:
             raise BadRequestError(f"트레이너가 존재하지 않습니다. Trainer: {trainer_id}")
 
@@ -85,11 +86,11 @@ class TrainerUserService:
         self.tu_repository.create_trainer_user(new_trainer_user)
 
     def update_trainer_user(self, trainer_id, user_id, data: UpdateTrainerUserRequest):
-        user = self.user_repository.select_by_id(user_id)
+        user = self.user_repository.get(user_id)
         if not user:
             raise BadRequestError(f"유저가 존재하지 않습니다. User_id: {user_id}")
 
-        trainer = self.trainer_repository.select_trainer_by_id(trainer_id)
+        trainer = self.trainer_repository.get(trainer_id)
         if not trainer:
             raise BadRequestError(f"트레이너가 존재하지 않습니다. Trainer: {trainer_id}")
 

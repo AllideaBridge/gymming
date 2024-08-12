@@ -155,7 +155,7 @@ class ScheduleService:
         end_date = date + timedelta(days=6)
 
         schedules = self.schedule_repository.select_week_schedule_by_trainer_id(trainer_id, start_date, end_date)
-        trainer = self.trainer_repository.select_trainer_by_id(trainer_id)
+        trainer = self.trainer_repository.get(trainer_id)
 
         result = {
             'result': [

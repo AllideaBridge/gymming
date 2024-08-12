@@ -1,16 +1,18 @@
+from app.entities.entity_user_fcm_token import UserFcmToken
 from app.entities.entity_users import Users
-from app.repositories.repository_users import user_repository
+
 from database import db
 
 
 class UserService:
+    def __init__(self, user_repository, user_fcm_repository):
+        self.user_repository = user_repository
+        self.user_fcm_repository = user_fcm_repository
 
-    @staticmethod
-    def get_user(user_id):
-        return user_repository.select_by_id(user_id)
+    def get_user(self, user_id):
+        return self.user_repository.select_by_id(user_id)
 
-    @staticmethod
-    def create_user(data):
+    def create_user(self, data):
         new_user = Users(
             user_email=data['user_email'],
             user_name=data.get('user_name'),
@@ -19,33 +21,46 @@ class UserService:
             user_profile_img_url=data.get('user_profile_img_url'),
             user_delete_flag=data.get('user_delete_flag', False),
         )
-        user_repository.insert(new_user)
+        self.user_repository.create(new_user)
         return new_user
 
-    @staticmethod
-    def update_user(user, data):
-        return user_repository.update(user, data)
+    def update_user(self, user, data):
+        user.user_email = data.get('user_email', user.user_email)
+        user.user_name = data.get('user_name', user.user_name)
+        user.user_gender = data.get('user_gender', user.user_gender)
+        user.user_phone_number = data.get('user_phone_number', user.user_phone_number)
+        user.user_profile_img_url = data.get('user_profile_img_url', user.user_profile_img_url)
+        user.user_delete_flag = data.get('user_delete_flag', user.user_delete_flag)
+        user.user_birthday = data.get('user_birthday', user.user_birthday)
 
-    @staticmethod
-    def get_user_by_social_id(social_id):
-        return user_repository.select_by_social_id(social_id)
+        return self.user_repository.update(user)
 
-    @staticmethod
-    def create_user_only_social_id(social_id):
+    def get_user_by_social_id(self, social_id):
+        return self.user_repository.select_by_social_id(social_id)
+
+    def create_user_only_social_id(self, social_id):
         new_user = Users(
             user_social_id=social_id
         )
-        user_repository.insert(new_user)
+        self.user_repository.insert(new_user)
         return new_user
 
-    @staticmethod
-    def check_user_exists(user_name, user_phone_number):
-        user = user_repository.select_by_username_and_phone_number(user_name, user_phone_number)
+    def check_user_exists(self, user_name, user_phone_number):
+        user = self.user_repository.select_by_username_and_phone_number(user_name, user_phone_number)
 
         if user:
             return {"exists": True}
         else:
             return {"exists": False}
 
+    def create_user_fcm_token(self, user_id, body):
+        old_token = self.user_fcm_repository.get_by_user_id(user_id=user_id)
+        if old_token is not None:
+            self.user_fcm_repository.delete(old_token)
 
-user_service = UserService()
+        user_fcm_token = UserFcmToken(
+            user_id=user_id,
+            fcm_token=body.fcm_token
+        )
+
+        self.user_fcm_repository.create(user_fcm_token)

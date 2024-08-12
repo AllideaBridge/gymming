@@ -80,7 +80,7 @@ class ChangeTicketService:
         self.change_ticket_repository.delete_change_ticket(change_ticket)
 
     def get_change_ticket_list_by_trainer(self, trainer_id, status, page):
-        if not self.trainer_repository.select_trainer_by_id(trainer_id):
+        if not self.trainer_repository.get(trainer_id):
             raise BadRequestError("존재하지 않는 트레이너 입니다.")
         change_tickets = self.change_ticket_repository.select_change_tickets_by_trainer_id(trainer_id, status)
 
@@ -88,7 +88,7 @@ class ChangeTicketService:
         for ticket in change_tickets:
             schedule: Schedule = self.schedule_repository.select_by_id(ticket.schedule_id)
             trainer_user: TrainerUser = self.trainer_user_repository.select_by_id(schedule.trainer_user_id)
-            user: Users = self.user_repository.select_by_id(user_id=trainer_user.user_id)
+            user: Users = self.user_repository.get(trainer_user.user_id)
             result = {
                 'id': ticket.id,
                 'user_name': user.user_name,
