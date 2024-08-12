@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 
+from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func, and_, literal_column
 from sqlalchemy.sql.functions import coalesce
 
@@ -9,10 +10,13 @@ from app.entities.entity_trainer import Trainer
 from app.entities.entity_trainer_user import TrainerUser
 from app.entities.entity_schedule import Schedule
 from app.entities.entity_users import Users
-from database import db
+from app.repositories.repository_base import BaseRepository
 
 
-class ScheduleRepository:
+class ScheduleRepository(BaseRepository[Schedule]):
+    def __init__(self, db: SQLAlchemy):
+        super().__init__(Schedule, db)
+
     def select_schedule_day_by_tu_id_and_year_month(self, trainer_user_id, year, month, page=1, per_page=10):
         start_date = datetime(year, month, 1)
         if month == 12:
@@ -29,16 +33,17 @@ class ScheduleRepository:
         return schedules
 
     def select_month_schedule_time_by_user_id(self, user_id, year, month):
-        schedules = (db.session.query(func.distinct(func.date(Schedule.schedule_start_time))).join(TrainerUser).filter(
-            TrainerUser.user_id == user_id,
-            db.extract('year', Schedule.schedule_start_time) == year,
-            db.extract('month', Schedule.schedule_start_time) == month)
-                     .order_by(func.date(Schedule.schedule_start_time).asc())
-                     .all())
+        schedules = (
+            self.db.session.query(func.distinct(func.date(Schedule.schedule_start_time))).join(TrainerUser).filter(
+                TrainerUser.user_id == user_id,
+                self.db.extract('year', Schedule.schedule_start_time) == year,
+                self.db.extract('month', Schedule.schedule_start_time) == month)
+            .order_by(func.date(Schedule.schedule_start_time).asc())
+            .all())
         return schedules
 
     def select_day_schedule_by_user_id(self, user_id, year, month, day):
-        schedules = (db.session.query(
+        schedules = (self.db.session.query(
             Schedule.schedule_id,
             Trainer.trainer_id,
             Schedule.schedule_start_time,
@@ -59,12 +64,8 @@ class ScheduleRepository:
 
         return schedules
 
-    def select_by_id(self, schedule_id):
-        schedule = Schedule.query.filter_by(schedule_id=schedule_id).first()
-        return schedule
-
     def select_conflict_schedule_by_trainer_id_and_request_time(self, trainer_id, request_time):
-        conflict_schedule = db.session.query(Schedule). \
+        conflict_schedule = self.db.session.query(Schedule). \
             join(TrainerUser, and_(TrainerUser.trainer_user_id == Schedule.trainer_user_id,
                                    Schedule.schedule_status == SCHEDULE_SCHEDULED)). \
             join(Trainer, and_(Trainer.trainer_id == TrainerUser.trainer_id,
@@ -76,7 +77,7 @@ class ScheduleRepository:
         return conflict_schedule
 
     def select_full_date_by_trainer_id_and_year_month(self, trainer_id, year, month):
-        full_dates = db.session.query(
+        full_dates = self.db.session.query(
             func.date(Schedule.schedule_start_time).label('date')
         ).join(TrainerUser, TrainerUser.trainer_user_id == Schedule.trainer_user_id
                ).join(Trainer, Trainer.trainer_id == TrainerUser.trainer_id
@@ -96,7 +97,7 @@ class ScheduleRepository:
         return full_dates
 
     def select_conflict_trainer_schedule_by_time(self, trainer_id, start_time):
-        schedule = db.session.query(Schedule). \
+        schedule = self.db.session.query(Schedule). \
             join(TrainerUser, and_(TrainerUser.trainer_user_id == Schedule.trainer_user_id,
                                    Schedule.schedule_status == SCHEDULE_SCHEDULED)). \
             join(Trainer, and_(Trainer.trainer_id == TrainerUser.trainer_id,
@@ -107,56 +108,40 @@ class ScheduleRepository:
 
         return schedule
 
-    def select_schedule_by_id(self, schedule_id):
-        schedule = Schedule.query.filter_by(schedule_id=schedule_id).first()
-        return schedule
-
-    def insert_schedule(self, schedule):
-        db.session.add(schedule)
-        db.session.commit()
-
-    def delete_schedule(self, schedule_id):
-        schedule = Schedule.query.filter_by(schedule_id=schedule_id).first()
-        if schedule:
-            schedule.schedule_delete_flag = True
-            db.session.commit()
-            return True
-        return False
-
     def select_day_schedule_by_trainer_id(self, trainer_id, date):
-        return db.session.query(
+        return self.db.session.query(
             Schedule.schedule_start_time
         ).join(TrainerUser, (TrainerUser.trainer_user_id == Schedule.trainer_user_id)
                & (TrainerUser.trainer_id == trainer_id)
                & (TrainerUser.trainer_user_delete_flag == False)
                & (Schedule.schedule_delete_flag == False)
-               & (db.func.date(Schedule.schedule_start_time) == date)
+               & (self.db.func.date(Schedule.schedule_start_time) == date)
                ).all()
 
     def select_week_schedule_by_trainer_id(self, trainer_id, start_date, end_date):
-        return db.session.query(Users.user_id, Users.user_name, Schedule.schedule_start_time) \
+        return self.db.session.query(Users.user_id, Users.user_name, Schedule.schedule_start_time) \
             .join(TrainerUser,
                   (TrainerUser.trainer_user_id == Schedule.trainer_user_id) \
                   & (TrainerUser.trainer_id == trainer_id) \
-                  & (db.func.date(Schedule.schedule_start_time) >= start_date) \
-                  & (db.func.date(Schedule.schedule_start_time) <= end_date)) \
+                  & (self.db.func.date(Schedule.schedule_start_time) >= start_date) \
+                  & (self.db.func.date(Schedule.schedule_start_time) <= end_date)) \
             .join(Users, Users.user_id == TrainerUser.user_id) \
             .all()
 
     def select_month_schedule_by_user_id_and_trainer_id(self, trainer_id, user_id, start_date, end_date):
-        return db.session.query(
+        return self.db.session.query(
             Schedule.schedule_id,
             Schedule.schedule_start_time
         ).join(TrainerUser, (TrainerUser.trainer_id == trainer_id)
                & (TrainerUser.user_id == user_id)
-               & (db.func.date(Schedule.schedule_start_time) >= start_date)
-               & (db.func.date(Schedule.schedule_start_time) < end_date)
+               & (self.db.func.date(Schedule.schedule_start_time) >= start_date)
+               & (self.db.func.date(Schedule.schedule_start_time) < end_date)
                & (TrainerUser.trainer_user_delete_flag == False)
                & (Schedule.schedule_delete_flag == False)
                ).all()
 
     def select_schedule_by_schedule_id(self, schedule_id):
-        result = db.session.query(
+        result = self.db.session.query(
             Schedule.schedule_id,
             Schedule.schedule_start_time,
             coalesce(Trainer.lesson_name, '').label('lesson_name'),
@@ -177,7 +162,7 @@ class ScheduleRepository:
         return result
 
     def select_lesson_change_range_by_schedue_id(self, schedule_id):
-        result = db.session.query(
+        result = self.db.session.query(
             coalesce(Trainer.lesson_change_range, 0).label('lesson_change_range')
         ).join(
             TrainerUser, Trainer.trainer_id == TrainerUser.trainer_id
@@ -193,6 +178,7 @@ class ScheduleRepository:
         ).first()
 
         return result
+
 
 # todo: 스케쥴 조회시 스케쥴 상태 조건 추가
 '''

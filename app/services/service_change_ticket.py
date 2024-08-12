@@ -15,14 +15,14 @@ from app.repositories.repository_trainer import TrainerRepository
 from app.repositories.repository_trainer_user import TrainerUserRepository
 from app.repositories.repository_users import UserRepository
 from app.models.model_change_ticket import CreateChangeTicketRequest, UpdateChangeTicketRequest
-from app.services.service_schedule import ScheduleService
+from app.services.service_factory import ServiceFactory
 
 
 class ChangeTicketService:
     def __init__(self):
         self.change_ticket_repository = ChangeTicketRepository()
         self.schedule_repository = ScheduleRepository()
-        self.schedule_service = ScheduleService()
+        self.schedule_service = ServiceFactory.schedule_service()
         self.user_repository = UserRepository()
         self.trainer_user_repository = TrainerUserRepository()
         self.trainer_repository = TrainerRepository()
@@ -34,7 +34,7 @@ class ChangeTicketService:
         return result
 
     def create_change_ticket(self, data: CreateChangeTicketRequest):
-        if self.schedule_repository.select_schedule_by_id(data.schedule_id) is None:
+        if self.schedule_repository.get(data.schedule_id) is None:
             raise ValidationError(message=f'SCHEDULE_ID NOT FOUND: {data.schedule_id}')
 
         new_change_ticket = ChangeTicket(
@@ -86,8 +86,8 @@ class ChangeTicketService:
 
         results = []
         for ticket in change_tickets:
-            schedule: Schedule = self.schedule_repository.select_by_id(ticket.schedule_id)
-            trainer_user: TrainerUser = self.trainer_user_repository.select_by_id(schedule.trainer_user_id)
+            schedule: Schedule = self.schedule_repository.get(ticket.schedule_id)
+            trainer_user: TrainerUser = self.trainer_user_repository.get(schedule.trainer_user_id)
             user: Users = self.user_repository.get(trainer_user.user_id)
             result = {
                 'id': ticket.id,
@@ -109,8 +109,8 @@ class ChangeTicketService:
 
         results = []
         for ticket in change_tickets:
-            schedule: Schedule = self.schedule_repository.select_by_id(ticket.schedule_id)
-            trainer_user: TrainerUser = self.trainer_user_repository.select_by_id(schedule.trainer_user_id)
+            schedule: Schedule = self.schedule_repository.get(ticket.schedule_id)
+            trainer_user: TrainerUser = self.trainer_user_repository.get(schedule.trainer_user_id)
             # TODO: trainer 에 대한 repository 구현 완료 시 Repository 사용하도록 변경
             trainer: Trainer = Trainer.query.filter_by(trainer_id=trainer_user.trainer_id).first()
             result = {

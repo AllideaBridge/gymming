@@ -4,20 +4,17 @@ from datetime import datetime, timedelta
 from app.common.constants import DATEFORMAT, SCHEDULE_MODIFIED, SCHEDULE_CANCELLED, SCHEDULE_TYPE_MONTH, \
     SCHEDULE_TYPE_DAY, SCHEDULE_TYPE_WEEK, DATETIMEFORMAT, SCHEDULE_SCHEDULED
 from app.common.exceptions import BadRequestError, ApplicationError
-from app.repositories.repository_schedule import ScheduleRepository
-from app.repositories.repository_trainer_availability import TrainerAvailabilityRepository
-from app.repositories.repository_trainer_user import TrainerUserRepository
-from app.repositories.repository_trainer import TrainerRepository
 from app.entities.entity_schedule import Schedule
 
 
 class ScheduleService:
 
-    def __init__(self):
-        self.schedule_repository = ScheduleRepository()
-        self.trainer_availability_repository = TrainerAvailabilityRepository()
-        self.trainer_user_repository = TrainerUserRepository()
-        self.trainer_repository = TrainerRepository()
+    def __init__(self, schedule_repository, trainer_availability_repository, trainer_user_repository,
+                 trainer_repository):
+        self.schedule_repository = schedule_repository
+        self.trainer_availability_repository = trainer_availability_repository
+        self.trainer_user_repository = trainer_user_repository
+        self.trainer_repository = trainer_repository
 
     def handle_get_user_schedule(self, user_id, date_str, schedule_type):
         date_obj = datetime.strptime(date_str, "%Y-%m-%d")
@@ -72,11 +69,11 @@ class ScheduleService:
     def _change_schedule(self, schedule_id, start_time):
         # todo : 스케쥴 변경 가능 범위인지 확인.
 
-        schedule = self.schedule_repository.select_schedule_by_id(schedule_id)
+        schedule = self.schedule_repository.get(schedule_id)
         if not schedule:
             raise ApplicationError(f"Schedule not found {schedule_id}", 404)
 
-        trainer_user = self.trainer_user_repository.select_by_id(schedule.trainer_user_id)
+        trainer_user = self.trainer_user_repository.get(schedule.trainer_user_id)
         trainer_id = trainer_user.trainer_id
 
         conflict_schedule = self.schedule_repository.select_conflict_trainer_schedule_by_time(trainer_id, start_time)
@@ -87,23 +84,24 @@ class ScheduleService:
 
         schedule.schedule_status = SCHEDULE_MODIFIED
         schedule.schedule_start_time = start_time
-        self.schedule_repository.insert_schedule(schedule)
+        self.schedule_repository.create(schedule)
 
         return {'message': 'Schedule updated successfully'}, 200
 
     def _cancel_schedule(self, schedule_id):
-        schedule = self.schedule_repository.select_schedule_by_id(schedule_id)
+        schedule = self.schedule_repository.get(schedule_id)
 
         if not schedule:
             raise ApplicationError(f"Schedule not found {schedule_id}", 404)
 
         schedule.schedule_status = SCHEDULE_CANCELLED
-        self.schedule_repository.insert_schedule(schedule)
+        self.schedule_repository.create(schedule)
         return {'message': 'Schedule cancel successfully'}, 200
 
     def delete_schedule(self, schedule_id):
         # todo : 스케쥴 변경 가능 범위인지 확인.
-        deleted = self.schedule_repository.delete_schedule(schedule_id)
+        schedule = self.schedule_repository.get(schedule_id)
+        deleted = self.schedule_repository.delete(schedule)
         if deleted:
             return {"message": "Schedule deleted successfully."}, 200
         raise ApplicationError(f"Schedule not found {schedule_id}", 404)
@@ -278,5 +276,5 @@ class ScheduleService:
             schedule_start_time=schedule_start_time,
             schedule_status=SCHEDULE_SCHEDULED
         )
-        self.schedule_repository.insert_schedule(schedule)
+        self.schedule_repository.create(schedule)
         return {"message": "success"}

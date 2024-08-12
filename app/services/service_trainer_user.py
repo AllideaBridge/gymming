@@ -4,7 +4,6 @@ from app.common.exceptions import BadRequestError
 from app.entities.entity_trainer_user import TrainerUser
 from app.entities.entity_users import Users
 from app.repositories.repository_trainer import TrainerRepository
-from app.repositories.repository_trainer_user import trainer_user_repository
 from app.repositories.repository_users import UserRepository
 from app.routes.models.model_trainer_user import UsersRelatedTrainerResponse, CreateTrainerUserRelationRequest, \
     TrainersRelatedUserResponse, UserDetailRelatedTrainerResponse, UpdateTrainerUserRequest
@@ -12,12 +11,11 @@ from app.services.service_image import ImageService
 
 
 class TrainerUserService:
-    def __init__(self):
-        self.tu_repository = trainer_user_repository
-        from database import db
-        self.user_repository = UserRepository(db=db)
-        self.trainer_repository = TrainerRepository(db=db)
-        self.image_service = ImageService()
+    def __init__(self, tu_repository, user_repository, trainer_repository, image_service):
+        self.tu_repository = tu_repository
+        self.user_repository = user_repository
+        self.trainer_repository = trainer_repository
+        self.image_service = image_service
 
     def get_users_related_trainer(self, trainer_id: int, delete_flag: bool = False):
         trainer = self.trainer_repository.get(trainer_id)
@@ -83,7 +81,7 @@ class TrainerUserService:
             special_notes=data.special_notice
         )
 
-        self.tu_repository.create_trainer_user(new_trainer_user)
+        self.tu_repository.create(new_trainer_user)
 
     def update_trainer_user(self, trainer_id, user_id, data: UpdateTrainerUserRequest):
         user = self.user_repository.get(user_id)
@@ -103,7 +101,7 @@ class TrainerUserService:
         trainer_user.lesson_current_count = data.lesson_current_count
         trainer_user.exercise_days = data.exercise_days
         trainer_user.special_notes = data.special_notice
-        self.tu_repository.update_trainer_user()
+        self.tu_repository.update()
 
     def delete_trainer_user(self, trainer_id, user_id):
         trainer_user: TrainerUser = self.tu_repository.select_by_trainer_id_and_user_id(
@@ -116,7 +114,4 @@ class TrainerUserService:
 
         trainer_user.trainer_user_delete_flag = True
         trainer_user.deleted_at = datetime.utcnow()
-        self.tu_repository.update_trainer_user()
-
-
-trainer_user_service = TrainerUserService()
+        self.tu_repository.update()

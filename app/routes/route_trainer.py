@@ -11,9 +11,10 @@ from app.entities.entity_trainer import Trainer
 from app.entities.entity_users import Users
 from app.entities.entity_schedule import Schedule
 from app.entities.entity_trainer_user import TrainerUser
+from app.models.model_auth import FcmAuthRequest
 from app.models.model_trainer import trainer_show_model
+from app.services.service_factory import ServiceFactory
 from app.services.service_image import ImageService
-from app.services.service_trainer import TrainerService
 from database import db
 
 ns_trainer = Namespace('trainers', description='Trainer API')
@@ -24,6 +25,7 @@ class TrainerResource(Resource):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.image_service = ImageService()
+        self.trainer_service = ServiceFactory.trainer_service()
 
     @ns_trainer.marshal_with(trainer_show_model)
     @jwt_required()
@@ -53,7 +55,7 @@ class TrainerResource(Resource):
             raise UnAuthorizedError(message="유효하지 않는 id입니다.")
 
         data = ns_trainer.payload
-        return TrainerService.update_trainer(trainer_id, data)
+        return self.trainer_service.update_trainer(trainer_id, data)
 
 
 trainer_user_model = ns_trainer.model('TrainingUser', {
@@ -207,6 +209,24 @@ class TrainingUserSchedules(Resource):
         }
 
 
+@ns_trainer.route('/<int:trainer_id>/fcm')
+class FcmTrainerResource(Resource):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.trainer_service = ServiceFactory.trainer_service()
+
+    @jwt_required()
+    def post(self, trainer_id):
+        current_trainer = get_jwt_identity()
+
+        if trainer_id != current_trainer['trainer_id']:
+            raise UnAuthorizedError(message="유효하지 않는 id입니다.")
+
+        body = FcmAuthRequest(**request.get_json())
+
+        self.trainer_service.create_trainer_fcm_token(trainer_id=trainer_id, body=body)
+        return {'message': 'success'}, 200
+
 # @ns_trainer.route('/trainer-user/schedule/<int:schedule_id>')
 # class TrainingUserSchedule(Resource):
 #     @ns_trainer.doc(description='트레이너가 회원을 조회한 화면에서 수업 했던 날짜를 클릭하여 해당 수업의 상세내용을 조회하는 api ',
@@ -235,6 +255,3 @@ class TrainingUserSchedules(Resource):
 #             "center_location": center_location if center_location else "정보 없음",
 #             "center_name": center_name if center_name else "정보 없음"
 #         }
-
-
-
