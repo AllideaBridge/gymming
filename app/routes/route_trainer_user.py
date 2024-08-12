@@ -35,8 +35,12 @@ class TrainerUsers(Resource):
         except BadRequestError or ValidationError as e:
             return {'message': '입력 데이터가 올바르지 않습니다.', 'errors': e.messages}, 400
 
+    @jwt_required()
     def post(self, trainer_id):
         try:
+            if trainer_id != get_jwt_identity()['trainer_id']:
+                raise UnAuthorizedError(message="유효하지 않는 id입니다.")
+
             body = CreateTrainerUserRelationRequest(ns_trainer_user.payload)
             self.tu_service.create_trainer_user_relation(trainer_id, body)
             return {'message': '새로운 회원이 등록됐습니다.'}, 200
@@ -64,16 +68,24 @@ class TrainerUser(Resource):
         except ValidationError as e:
             return {'message': '입력 데이터가 올바르지 않습니다.', 'errors': e.messages}, 400
 
+    @jwt_required()
     def put(self, trainer_id, user_id):
         try:
+            if trainer_id != get_jwt_identity()['trainer_id']:
+                raise UnAuthorizedError(message="유효하지 않는 id입니다.")
+
             body = UpdateTrainerUserRequest(ns_trainer_user.payload)
             self.tu_service.update_trainer_user(trainer_id, user_id, body)
             return {'message': '회원정보가 수정됐습니다.'}, 200
         except ValidationError as e:
             return {'message': '입력 데이터가 올바르지 않습니다.', 'errors': e.messages}, 400
 
+    @jwt_required()
     def delete(self, trainer_id, user_id):
         try:
+            if trainer_id != get_jwt_identity()['trainer_id']:
+                raise UnAuthorizedError(message="유효하지 않는 id입니다.")
+
             self.tu_service.delete_trainer_user(trainer_id, user_id)
             return {'message': '회원정보가 수정됐습니다.'}, 200
         except ValidationError as e:
