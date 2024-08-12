@@ -6,7 +6,7 @@ from marshmallow import ValidationError
 
 from app.common.constants import DATETIMEFORMAT, DATEFORMAT
 from app.common.exceptions import ApplicationError
-from app.services.service_schedule import ScheduleService
+from app.services.service_factory import ServiceFactory
 
 ns_schedule = Namespace('schedules', description='Schedules related operations', path='/schedules')
 
@@ -15,7 +15,7 @@ ns_schedule = Namespace('schedules', description='Schedules related operations',
 class Schedules(Resource):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.schedule_service = ScheduleService()
+        self.schedule_service = ServiceFactory.schedule_service()
 
     def post(self):
         data = request.json
@@ -34,7 +34,7 @@ class Schedules(Resource):
 class Schedule(Resource):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.schedule_service = ScheduleService()
+        self.schedule_service = ServiceFactory.schedule_service()
 
     def get(self, schedule_id):
         return self.schedule_service.get_schedule_details(schedule_id)
@@ -58,7 +58,7 @@ class Schedule(Resource):
 class UserSchedule(Resource):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.schedule_service = ScheduleService()
+        self.schedule_service = ServiceFactory.schedule_service()
 
     def get(self, user_id):
         date_str = request.args.get('date')
@@ -71,7 +71,7 @@ class UserSchedule(Resource):
 class UserScheduleCheck(Resource):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.schedule_service = ScheduleService()
+        self.schedule_service = ServiceFactory.schedule_service()
 
     def get(self, schedule_id):
         return self.schedule_service.validate_schedule_change(schedule_id)
@@ -81,7 +81,7 @@ class UserScheduleCheck(Resource):
 class TrainerSchedule(Resource):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.schedule_service = ScheduleService()
+        self.schedule_service = ServiceFactory.schedule_service()
 
     def get(self, trainer_id):
         date_str = request.args.get('date')
@@ -95,7 +95,7 @@ class TrainerSchedule(Resource):
 class TrainerAssignedUserSchedule(Resource):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.schedule_service = ScheduleService()
+        self.schedule_service = ServiceFactory.schedule_service()
 
     def get(self, trainer_id, user_id):
         date_str = request.args.get('date')

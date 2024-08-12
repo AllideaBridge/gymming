@@ -4,14 +4,15 @@ from http import HTTPStatus
 import requests
 
 from app.common.exceptions import BadRequestError
+from app.services.service_factory import ServiceFactory
 from app.services.service_user import UserService
-from app.services.service_trainer import TrainerService
 
 
 class AuthService:
     def __init__(self):
         self.kakao_token_verify_url = 'https://kapi.kakao.com/v1/user/access_token_info'
         self.kakao_get_user_info_url = 'https://kapi.kakao.com/v2/user/me'
+        self.trainer_service = ServiceFactory.trainer_service()
 
     def verify_kakao_token(self, token):
         headers = {'Authorization': f'Bearer {token}'}
@@ -54,7 +55,7 @@ class AuthService:
 
     def auth_gymming_kakao_trainer(self, token):
         social_id = self.authenticate_kakao_user(token)
-        trainer = TrainerService.get_trainer_by_social_id(social_id)
+        trainer = self.trainer_service.get_trainer_by_social_id(social_id)
         if trainer is None:
-            trainer = TrainerService.create_trainer_only_social_id(social_id)
+            trainer = self.trainer_service.create_trainer_only_social_id(social_id)
         return trainer

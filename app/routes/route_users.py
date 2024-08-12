@@ -122,3 +122,5 @@ class FcmUserResource(Resource):
         body = FcmAuthRequest(**request.get_json())
 
         self.user_service.create_user_fcm_token(user_id=user_id, body=body)
+        return {'message': 'success'}, 200
+        return {'message': 'success'}, 200

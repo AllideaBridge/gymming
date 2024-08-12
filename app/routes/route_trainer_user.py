@@ -5,7 +5,7 @@ from marshmallow import ValidationError
 from app.common.exceptions import BadRequestError, UnAuthorizedError
 from app.models.model_trainer_user import users_of_trainer, trainers_of_user, user_detail_of_trainer
 from app.routes.models.model_trainer_user import CreateTrainerUserRelationRequest, UpdateTrainerUserRequest
-from app.services.service_trainer_user import trainer_user_service
+from app.services.service_factory import ServiceFactory
 
 ns_trainer_user = Namespace('trainer-user', description='TrainerUser API')
 
@@ -14,7 +14,7 @@ ns_trainer_user = Namespace('trainer-user', description='TrainerUser API')
 class TrainerUsers(Resource):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.tu_service = trainer_user_service
+        self.tu_service = ServiceFactory.trainer_user_service()
 
     @ns_trainer_user.marshal_with(users_of_trainer)
     @jwt_required()
@@ -52,7 +52,7 @@ class TrainerUsers(Resource):
 class TrainerUser(Resource):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.tu_service = trainer_user_service
+        self.tu_service = ServiceFactory.trainer_user_service()
 
     @ns_trainer_user.marshal_with(user_detail_of_trainer)
     @jwt_required()
@@ -96,7 +96,7 @@ class TrainerUser(Resource):
 class UserTrainers(Resource):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.tu_service = trainer_user_service
+        self.tu_service = ServiceFactory.trainer_user_service()
 
     @ns_trainer_user.marshal_with(trainers_of_user)
     @jwt_required()

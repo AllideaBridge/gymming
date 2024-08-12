@@ -10,7 +10,7 @@ class UserService:
         self.user_fcm_repository = user_fcm_repository
 
     def get_user(self, user_id):
-        return self.user_repository.select_by_id(user_id)
+        return self.user_repository.get(user_id)
 
     def create_user(self, data):
         new_user = Users(

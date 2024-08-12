@@ -18,18 +18,12 @@ class TrainerRepository(BaseRepository[Trainer]):
                & (TrainerAvailability.week_day == date.weekday())
                ).filter(Trainer.trainer_id == trainer_id, Trainer.trainer_delete_flag == False).first()
 
-    @staticmethod
-    def select_trainer_by_id(trainer_id):
-        return Trainer.query.filter_by(trainer_id=trainer_id).first()
-
-    @staticmethod
-    def select_trainer_by_social_id(trainer_social_id):
+    def select_trainer_by_social_id(self, trainer_social_id):
         return Trainer.query.filter_by(trainer_social_id=trainer_social_id).first()
 
     def insert_trainer_with_social_id(self, trainer_social_id):
         trainer = Trainer(
             trainer_social_id=trainer_social_id
         )
-        self.db.session.add(trainer)
-        self.db.session.commit()
-        return trainer
+
+        return super().create(trainer)

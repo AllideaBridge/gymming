@@ -1,13 +1,12 @@
 import logging
 
-import boto3
 from botocore.exceptions import ClientError
 
 
 class ImageService:
-    def __init__(self):
-        self.s3 = boto3.client('s3')
-        self.BUCKET_NAME = 'gymming'
+    def __init__(self, s3, bucket):
+        self.s3 = s3
+        self.BUCKET_NAME = bucket
 
     def upload_image(self, entity, id, file, prefix):
         s3_key = f'{entity}/{id}/{prefix}'

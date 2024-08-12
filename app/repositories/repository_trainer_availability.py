@@ -1,15 +1,20 @@
 from datetime import datetime
 
+from flask_sqlalchemy import SQLAlchemy
+
 from app.common.constants import TIMEFORMAT
 from app.entities.entity_trainer_availability import TrainerAvailability
 from app.entities.entity_trainer import Trainer
+from app.repositories.repository_base import BaseRepository
 from app.utils.util_time import calculate_lesson_slots
-from database import db
 
 
-class TrainerAvailabilityRepository:
+class TrainerAvailabilityRepository(BaseRepository[TrainerAvailability]):
+    def __init__(self, db: SQLAlchemy):
+        super().__init__(TrainerAvailability, db)
+
     def select_week_day_by_trainer_id(self, trainer_id):
-        available_week_days = db.session.query(
+        available_week_days = self.db.session.query(
             TrainerAvailability.week_day
         ).filter_by(
             trainer_id=trainer_id
@@ -17,16 +22,14 @@ class TrainerAvailabilityRepository:
 
         return available_week_days
 
-    @staticmethod
-    def delete_availability_by_trainer(trainer_id):
+    def delete_availability_by_trainer(self, trainer_id):
         availabilities = TrainerAvailability.query.filter_by(trainer_id=trainer_id).all()
         for availability in availabilities:
-            db.session.delete(availability)
+            self.db.session.delete(availability)
 
-        db.session.commit()
+        self.db.session.commit()
 
-    @staticmethod
-    def insert_availabilities(trainer_id, availabilities):
+    def insert_availabilities(self, trainer_id, availabilities):
         trainer = Trainer.query.filter_by(trainer_id=trainer_id).first()
         lesson_minutes = trainer.lesson_minutes
         for availability in availabilities:
@@ -41,6 +44,6 @@ class TrainerAvailabilityRepository:
                 end_time=availability.get('end_time'),
                 possible_lesson_cnt=possible_lesson_cnt
             )
-            db.session.add(trainer_availability)
+            self.db.session.add(trainer_availability)
 
-        db.session.commit()
+        self.db.session.commit()
