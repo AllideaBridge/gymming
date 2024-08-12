@@ -21,7 +21,7 @@ class ChangeTicket(Resource):
     @jwt_required()
     def post(self):
         try:
-            body = CreateChangeTicketRequest(ns_change_ticket.payload)
+            body = CreateChangeTicketRequest(**request.json)
             current_auth: dict = get_jwt_identity()
 
             if body.change_from == const.CHANGE_FROM_USER:
@@ -67,7 +67,7 @@ class ChangeTicketWithID(Resource):
     @jwt_required()
     def put(self, change_ticket_id):
         try:
-            body = UpdateChangeTicketRequest(ns_change_ticket.payload)
+            body = UpdateChangeTicketRequest(**request.json)
 
             self.change_ticket_service.handle_update_change_ticket(change_ticket_id, body)
 

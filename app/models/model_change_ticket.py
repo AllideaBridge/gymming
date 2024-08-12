@@ -1,38 +1,95 @@
-from flask_restx import fields, Model, SchemaModel
+from typing import Any
+
+from flask_restx import fields, Model
+from pydantic import BaseModel, Field, field_validator
+
+from app.common.constants import const
+from app.common.exceptions import BadRequestError
 
 
-class CreateChangeTicketRequest(SchemaModel):
-    schedule_id = fields.Integer(required=True)
-    change_from = fields.String(required=True)
-    change_type = fields.String(required=True)
-    change_reason = fields.String(required=True)
-    start_time = fields.String(required=True)
+class CreateChangeTicketRequest(BaseModel):
+    schedule_id: int = Field()
+    change_from: str = Field()
+    change_type: str = Field()
+    change_reason: str = Field()
+    start_time: str = Field()
 
-    def __init__(self, data):
-        super().__init__(name='CreateChangeTicketRequest')
-        self.schedule_id = data['schedule_id']
-        self.change_from = data['change_from']
-        self.change_type = data['change_type']
-        self.change_reason = data['change_reason']
-        self.start_time = data['start_time']
+    @field_validator('shcedule_id')
+    @classmethod
+    def validate(cls, value: int):
+        if value < 0:
+            raise BadRequestError()
+        return value
+
+    @field_validator('change_from')
+    @classmethod
+    def validate(cls, value: str):
+        if value not in [const.CHANGE_FROM_USER, const.CHANGE_FROM_TRAINER]:
+            raise BadRequestError()
+        return value
+
+    @field_validator('change_type')
+    @classmethod
+    def validate(cls, value: str):
+        if value not in [const.CHANGE_TICKET_TYPE_MODIFY, const.CHANGE_TICKET_TYPE_CANCEL]:
+            raise BadRequestError()
+        return value
+
+    @field_validator('change_reason')
+    @classmethod
+    def validate(cls, value: str):
+        return value
+
+    @field_validator('start_time')
+    @classmethod
+    def validate(cls, value: str):
+        return value
 
 
-class UpdateChangeTicketRequest(SchemaModel):
-    change_from = fields.String(required=True)
-    change_type = fields.String(required=True)
-    status = fields.String(required=True)
-    change_reason = fields.String(required=True)
-    reject_reason = fields.String(required=True)
-    start_time = fields.String(required=True)
+class UpdateChangeTicketRequest(BaseModel):
+    change_from: str = Field()
+    change_type: str = Field()
+    status: str = Field()
+    change_reason: str = Field()
+    reject_reason: str = Field()
+    start_time: str = Field()
 
-    def __init__(self, data):
-        super().__init__(name='UpdateChangeTicketRequest')
-        self.change_from = data['change_from']
-        self.change_type = data['change_type']
-        self.status = data['status']
-        self.change_reason = data['change_reason']
-        self.reject_reason = data['reject_reason']
-        self.start_time = data['start_time']
+    @field_validator('change_from')
+    @classmethod
+    def validate(cls, value: str):
+        if value not in [const.CHANGE_FROM_USER, const.CHANGE_FROM_TRAINER]:
+            raise BadRequestError()
+        return value
+
+    @field_validator('change_type')
+    @classmethod
+    def validate(cls, value: str):
+        if value not in [const.CHANGE_TICKET_TYPE_MODIFY, const.CHANGE_TICKET_TYPE_CANCEL]:
+            raise BadRequestError()
+        return value
+
+    @field_validator('status')
+    @classmethod
+    def validate(cls, value: str):
+        if value not in [const.CHANGE_TICKET_STATUS_WAITING, const.CHANGE_TICKET_STATUS_APPROVED,
+                         const.CHANGE_TICKET_STATUS_REJECTED, const.CHANGE_TICKET_STATUS_CANCELED]:
+            raise BadRequestError()
+        return value
+
+    @field_validator('change_reason')
+    @classmethod
+    def validate(cls, value: str):
+        return value
+
+    @field_validator('reject_reason')
+    @classmethod
+    def validate(cls, value: str):
+        return value
+
+    @field_validator('start_time')
+    @classmethod
+    def validate(cls, value: Any):
+        return value
 
 
 class ChangeTicketResponse:
