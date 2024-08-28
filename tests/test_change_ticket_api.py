@@ -1,12 +1,13 @@
-from datetime import datetime
+from datetime import datetime, timedelta
+from unittest.mock import patch
 
-from app.common.constants import const
+from app.common.constants import const, CHANGE_TICKET_STATUS_APPROVED
 from app.entities.entity_change_ticket import ChangeTicket
 from app.entities.entity_schedule import Schedule
 from app.entities.entity_trainer_user import TrainerUser
 from database import db
 from tests import BaseTestCase
-from tests.test_data_factory import TestDataFactory, ChangeTicketBuilder
+from tests.test_data_factory import TestDataFactory, ChangeTicketBuilder, ScheduleBuilder
 
 
 class TestChangeTicketApi(BaseTestCase):
@@ -25,14 +26,15 @@ class TestChangeTicketApi(BaseTestCase):
 
     def test_유저_티켓생성(self):
         user = TestDataFactory.create_user()
-        schedule = TestDataFactory.create_schedule()
+        schedule = ScheduleBuilder().with_user(user).build()
 
         body = {
             "schedule_id": schedule.schedule_id,
             "change_from": "USER",
             "change_type": "CANCEL",
             "change_reason": "그냥",
-            "start_time": "2024-05-13T12:00:00"
+            "start_time": "2024-05-13T12:00:00",
+            "as_is_date": "2024-05-12T12:00:00"
         }
 
         headers = TestDataFactory.create_user_auth_header(user.user_id)
@@ -40,8 +42,25 @@ class TestChangeTicketApi(BaseTestCase):
 
         self.assertEqual(response.status_code, 200)
 
+    def test_이미_티켓이_있는_경우_티켓_생성을_하면_400을_응답한다(self):
+        user = TestDataFactory.create_user()
+        schedule = ScheduleBuilder().with_user(user).build()
+        ChangeTicketBuilder().with_schedule(schedule).build()
 
-class TrainerScheduleTestCase(BaseTestCase):
+        body = {
+            "schedule_id": schedule.schedule_id,
+            "change_from": "USER",
+            "change_type": "CANCEL",
+            "change_reason": "그냥",
+            "start_time": "2024-05-13T12:00:00",
+            "as_is_date": "2024-05-12T12:00:00"
+        }
+
+        headers = TestDataFactory.create_user_auth_header(user.user_id)
+        response = self.client.post(f'/change-ticket', headers=headers, json=body)
+        print(response.get_json())
+        self.assertEqual(response.status_code, 400)
+
     def test_트레이너_변경티켓_대기_리스트_조회(self):
         trainer = TestDataFactory.create_trainer()
         waiting_tickets = [
@@ -64,6 +83,7 @@ class TrainerScheduleTestCase(BaseTestCase):
             headers=headers)
         self.assertEqual(response.status_code, 200)
         data = response.get_json()
+        print(data)
 
         self.assertEqual(len(data), len(waiting_tickets))
 
@@ -152,12 +172,20 @@ class TrainerScheduleTestCase(BaseTestCase):
 
         self.assertEqual(response.status_code, 400)
 
-    def test_유저의_요청_거절(self):
+    @patch('app.services.service_fcm.FcmService.send_message')
+    def test_유저의_요청이_거절되는_경우(self, mock_send_message):
         user = TestDataFactory.create_user()
-        change_ticket = TestDataFactory.create_change_ticket(status=const.CHANGE_TICKET_STATUS_WAITING)
+        user_fcm_token = TestDataFactory.create_user_fcm_token(user)
+        trainer = TestDataFactory.create_trainer()
+        change_ticket = (ChangeTicketBuilder()
+                         .with_user(user)
+                         .with_trainer(trainer)
+                         .with_status(const.CHANGE_TICKET_STATUS_WAITING)
+                         .build())
+
         reject_reason = "I'm busy too."
         body = {
-            "change_from": "USER",
+            "change_from": const.CHANGE_FROM_USER,
             "change_type": const.CHANGE_TICKET_TYPE_MODIFY,
             "status": const.CHANGE_TICKET_STATUS_REJECTED,
             "change_reason": "I go travel.",
@@ -168,10 +196,18 @@ class TrainerScheduleTestCase(BaseTestCase):
         headers = TestDataFactory.create_user_auth_header(user.user_id)
         self.client.put(f'/change-ticket/{change_ticket.id}', headers=headers, json=body)
 
-        data: ChangeTicket = ChangeTicket.query.filter_by(id=change_ticket.id).first()
+        data: ChangeTicket = ChangeTicket.query.get(change_ticket.id)
         self.assertEqual(change_ticket.id, data.id)
         self.assertEqual(const.CHANGE_TICKET_STATUS_REJECTED, data.status)
         self.assertEqual(reject_reason, data.reject_reason)
+
+        # 푸시 알람이 올바르게 호출되었는지 확인
+        mock_send_message.assert_called_once_with(
+            title='요청 거절',
+            body=f'{trainer.trainer_name}님이 요청을 거절하였습니다.',
+            token=user_fcm_token.fcm_token,  # 정확한 토큰 값을 확인하세요
+            data={'change_ticket': data}
+        )
 
     def test_유효하지_않은_change_type으로_Change_ticket_생성한_경우(self):
         user = TestDataFactory.create_user()
@@ -189,9 +225,16 @@ class TrainerScheduleTestCase(BaseTestCase):
         response = self.client.post(f'/change-ticket', headers=headers, json=body)
         self.assertEqual(response.status_code, 400)
 
-    def test_취소변경티켓이_승인된_경우(self):
+    @patch('app.services.service_fcm.FcmService.send_message')
+    def test_취소변경티켓이_승인된_경우(self, mock_send_message):
         user = TestDataFactory.create_user()
-        schedule = TestDataFactory.create_schedule()
+        user_fcm_token = TestDataFactory.create_user_fcm_token(user)
+        trainer = TestDataFactory.create_trainer()
+        trainer_user = TestDataFactory.create_trainer_user(trainer=trainer, user=user)
+        schedule = TestDataFactory.create_schedule(trainer_user=trainer_user)
+
+        lesson_current_count = trainer_user.lesson_current_count
+
         cancel_change_ticket = TestDataFactory.create_change_ticket(
             schedule=schedule,
             status=const.CHANGE_TICKET_STATUS_WAITING,
@@ -210,15 +253,36 @@ class TrainerScheduleTestCase(BaseTestCase):
         headers = TestDataFactory.create_user_auth_header(user.user_id)
         response = self.client.put(f'/change-ticket/{cancel_change_ticket.id}', headers=headers, json=body)
 
-        change_ticket = ChangeTicket.query.filter_by(id=cancel_change_ticket.id).first()
-        schedule = Schedule.query.filter_by(schedule_id=schedule.schedule_id).first()
-        self.assertEqual(200, response.status_code)
-        self.assertEqual(const.CHANGE_TICKET_STATUS_APPROVED, change_ticket.status)
-        self.assertEqual(const.SCHEDULE_CANCELLED, schedule.schedule_status)
+        change_ticket_from_db = ChangeTicket.query.filter_by(id=cancel_change_ticket.id).first()
+        schedule_from_db = Schedule.query.filter_by(schedule_id=schedule.schedule_id).first()
+        trainer_user_from_db = TrainerUser.query.filter_by(trainer_user_id=trainer_user.trainer_user_id).first()
 
-    def test_시간변경티켓이_승인된_경우(self):
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(const.CHANGE_TICKET_STATUS_APPROVED, change_ticket_from_db.status)
+        self.assertEqual(const.SCHEDULE_CANCELLED, schedule_from_db.schedule_status)
+        self.assertEqual(lesson_current_count + 1, trainer_user_from_db.lesson_current_count)
+
+        # 푸시 알람이 올바르게 호출되었는지 확인
+        mock_send_message.assert_called_once_with(
+            title='요청 승인',
+            body=f'{trainer.trainer_name}님이 요청을 승인하였습니다.',
+            token=user_fcm_token.fcm_token,  # 정확한 토큰 값을 확인하세요
+            data={'change_ticket': change_ticket_from_db}
+        )
+
+    @patch('app.services.service_fcm.FcmService.send_message')
+    def test_시간변경티켓이_승인된_경우(self, mock_send_message):
         user = TestDataFactory.create_user()
-        schedule = TestDataFactory.create_schedule()
+        user_fcm_token = TestDataFactory.create_user_fcm_token(user)
+        lesson_change_range = 1
+        schedule_start_time = datetime.now() + timedelta(days=1, minutes=1)
+        trainer = TestDataFactory.create_trainer(lesson_change_range=lesson_change_range)
+        schedule = (ScheduleBuilder()
+                    .with_user(user=user)
+                    .with_trainer(trainer)
+                    .with_start_time(schedule_start_time)
+                    .build())
+
         change_ticket = TestDataFactory.create_change_ticket(
             schedule=schedule,
             change_type=const.CHANGE_TICKET_TYPE_MODIFY,
@@ -236,6 +300,7 @@ class TrainerScheduleTestCase(BaseTestCase):
         }
         headers = TestDataFactory.create_user_auth_header(user.user_id)
         response = self.client.put(f'/change-ticket/{change_ticket.id}', headers=headers, json=body)
+        print(response.get_json())
 
         change_ticket = ChangeTicket.query.filter_by(id=change_ticket.id).first()
         schedule = Schedule.query.filter_by(schedule_id=schedule.schedule_id).first()
@@ -246,6 +311,13 @@ class TrainerScheduleTestCase(BaseTestCase):
         self.assertEqual(schedule.schedule_status, const.SCHEDULE_MODIFIED)
         self.assertEqual(schedule.schedule_id, new_schedule.schedule_id)
         self.assertIsNotNone(new_schedule)
+
+        mock_send_message.assert_called_once_with(
+            title='요청 승인',
+            body=f'{trainer.trainer_name}님이 요청을 승인하였습니다.',
+            token=user_fcm_token.fcm_token,  # 정확한 토큰 값을 확인하세요
+            data={'change_ticket': change_ticket}
+        )
 
     def test_변경티켓_상태가_WAITING이_아닐때_수정할_경우(self):
         user = TestDataFactory.create_user()
@@ -268,18 +340,21 @@ class TrainerScheduleTestCase(BaseTestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.get_json()['message'], f'이미 처리된 Change Ticket 입니다. {change_ticket.id}')
 
-    def test_변경티켓_시간에_이미_스케쥴이_있는데_수락하는_경우(self):
+    @patch('app.services.service_fcm.FcmService.send_message')
+    def test_변경티켓_시간에_이미_스케쥴이_있는데_수락하는_경우(self, mock_send_message):
         # Given
         user = TestDataFactory.create_user()
-        trainer = TestDataFactory.create_trainer()
+        lesson_change_range = 1
+        trainer = TestDataFactory.create_trainer(lesson_change_range=lesson_change_range)
         trainer_user = TestDataFactory.create_trainer_user(trainer=trainer, user=user)
 
-        already_exist_time = "2024-07-29 18:00:00"
+        already_exist_time = datetime.now() + timedelta(days=lesson_change_range, minutes=1)
         already_exist_schedule = TestDataFactory.create_schedule(
             trainer_user=trainer_user,
             start_time=already_exist_time,
             schedule_status=const.SCHEDULE_SCHEDULED
         )
+
         change_ticket = TestDataFactory.create_change_ticket(
             schedule=already_exist_schedule,
             change_type=const.CHANGE_TICKET_TYPE_MODIFY,
@@ -294,7 +369,7 @@ class TrainerScheduleTestCase(BaseTestCase):
             "status": const.CHANGE_TICKET_STATUS_APPROVED,
             "change_reason": "I go travel.",
             "reject_reason": "",
-            "start_time": "2024-07-29 18:30:00"
+            "start_time": already_exist_time.strftime(const.DATETIMEFORMAT)
         }
 
         headers = TestDataFactory.create_user_auth_header(user.user_id)
@@ -304,6 +379,8 @@ class TrainerScheduleTestCase(BaseTestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.get_json()['message'],
                          'New schedule conflicts with existing schedules of the trainer')
+
+        mock_send_message.assert_not_called()
 
     def test_get_change_ticket_history(self):
         user = TestDataFactory.create_user()
@@ -318,3 +395,12 @@ class TrainerScheduleTestCase(BaseTestCase):
         self.assertIsInstance(data, list)
         self.assertEqual(len(data), size)
         print(data)
+
+    def test_이미_결정된_티켓을_삭제하면_400을_응답한다(self):
+        user = TestDataFactory.create_user()
+        change_ticket = ChangeTicketBuilder().with_user(user).with_status(CHANGE_TICKET_STATUS_APPROVED).build()
+
+        headers = TestDataFactory.create_user_auth_header(user.user_id)
+        response = self.client.delete(f'/change-ticket/{change_ticket.id}', headers=headers)
+        print(response.get_json())
+        self.assertEqual(response.status_code, 400)

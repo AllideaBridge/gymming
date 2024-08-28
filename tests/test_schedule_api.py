@@ -1,31 +1,17 @@
 import unittest
 from datetime import datetime, timedelta
+from unittest.mock import patch
 
 from app import create_app, Users, Schedule, Trainer, TrainerUser, register_error_handlers
 from app.common.constants import SCHEDULE_CANCELLED, SCHEDULE_SCHEDULED, DATETIMEFORMAT, SCHEDULE_MODIFIED
 from app.common.exceptions import BadRequestError
+from app.repositories.repository_trainer_user import TrainerUserRepository
 from database import db
+from tests import BaseTestCase
 from tests.test_data_factory import ScheduleBuilder, TestDataFactory
 
 
-class ScheduleTestCase(unittest.TestCase):
-    app = None
-    app_context = None
-
-    @classmethod
-    def setUpClass(cls):
-        cls.app = create_app('test')
-        cls.app_context = cls.app.app_context()
-        cls.app_context.push()
-        db.drop_all()
-        db.create_all()
-        cls.client = cls.app.test_client()
-
-    def setUp(self):
-        db.session.begin_nested()
-
-    def tearDown(self):
-        db.session.rollback()
+class ScheduleTestCase(BaseTestCase):
 
     def test_유저_한달_스케쥴_있는_날짜_조회(self):
         user = TestDataFactory.create_user()
@@ -184,26 +170,13 @@ class ScheduleTestCase(unittest.TestCase):
         self.assertIn("center_name", data)
         self.assertIn("center_location", data)
 
-    def test_create_schedule(self):
-        trainer = TestDataFactory.create_trainer()
-        user = TestDataFactory.create_user()
-        TestDataFactory.create_trainer_user(trainer, user)
-
-        data = {
-            'trainer_id': trainer.trainer_id,
-            'user_id': user.user_id,
-            'schedule_start_time': (datetime.now() + timedelta(days=1)).strftime(DATETIMEFORMAT)
-        }
-        response = self.client.post('/schedules', json=data)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json['message'], 'success')
-        print(response.get_json())
-        print(data)
-
-    def test_create_schedule_success(self):
+    @patch('app.services.service_fcm.FcmService.send_message')
+    def test_create_schedule_success(self, mock_send_message):
         # 준비
         trainer = TestDataFactory.create_trainer()
         user = TestDataFactory.create_user()
+        trainer_fcm_token = TestDataFactory.create_trainer_fcm_token(trainer)
+
         # 수업 횟수가 남아있음
         lesson_current_count = 1
         trainer_user = TestDataFactory.create_trainer_user(trainer, user, lesson_current_count=lesson_current_count)
@@ -230,7 +203,36 @@ class ScheduleTestCase(unittest.TestCase):
         self.assertEqual(created_schedule.schedule_status, SCHEDULE_SCHEDULED)
 
         # 수업 횟수가 차감되었는지 확인
-        self.assertEqual(trainer_user.lesson_current_count, lesson_current_count - 1)
+        trainer_user_from_db = TrainerUserRepository(db=db).get(trainer_user.trainer_user_id)
+        self.assertEqual(trainer_user_from_db.lesson_current_count, lesson_current_count - 1)
+
+        # 푸시 알람이 올바르게 호출되었는지 확인
+        mock_send_message.assert_called_once_with(
+            title='수업 신청',
+            body=f'{user.user_name}님이 수업을 신청하였습니다.',
+            token=trainer_fcm_token.fcm_token,  # 정확한 토큰 값을 확인하세요
+            data={'schedule_start_time': data['schedule_start_time']}
+        )
+
+    def test_과거시간으로_스케쥴을_생성하면_실패한다(self):
+        # 준비
+        trainer = TestDataFactory.create_trainer()
+        user = TestDataFactory.create_user()
+        # 수업 횟수가 남아있음
+        lesson_current_count = 1
+        trainer_user = TestDataFactory.create_trainer_user(trainer, user, lesson_current_count=lesson_current_count)
+
+        data = {
+            'trainer_id': trainer.trainer_id,
+            'user_id': user.user_id,
+            'schedule_start_time': (datetime.now()).strftime(DATETIMEFORMAT)
+        }
+
+        # 실행
+        response = self.client.post('/schedules', json=data)
+        print(response.get_json())
+        # 검증
+        self.assertEqual(response.status_code, 400)
 
     def test_create_schedule_conflict(self):
         # 준비
@@ -252,7 +254,6 @@ class ScheduleTestCase(unittest.TestCase):
 
         # 실행
         response = self.client.post('/schedules', json=data)
-
 
         # 검증
         self.assertEqual(response.status_code, 400)

@@ -146,6 +146,7 @@ class ScheduleRepository(BaseRepository[Schedule]):
             Schedule.schedule_start_time,
             coalesce(Trainer.lesson_name, '').label('lesson_name'),
             Trainer.trainer_name,
+            coalesce(Trainer.lesson_change_range, 0).label('lesson_change_range'),
             coalesce(Trainer.center_name, '').label('center_name'),
             coalesce(Trainer.center_location, '').label('center_location'),
         ).join(
@@ -161,26 +162,8 @@ class ScheduleRepository(BaseRepository[Schedule]):
 
         return result
 
-    def select_lesson_change_range_by_schedue_id(self, schedule_id):
-        result = self.db.session.query(
-            coalesce(Trainer.lesson_change_range, 0).label('lesson_change_range')
-        ).join(
-            TrainerUser, Trainer.trainer_id == TrainerUser.trainer_id
-        ).join(
-            Schedule, TrainerUser.trainer_user_id == Schedule.trainer_user_id
-        ).filter(
-            and_(
-                Schedule.schedule_id == schedule_id,
-                Schedule.schedule_delete_flag == False,
-                TrainerUser.trainer_user_delete_flag == False,
-                Trainer.trainer_delete_flag == False
-            )
-        ).first()
 
-        return result
-
-
-# todo: 스케쥴 조회시 스케쥴 상태 조건 추가
+# todo.txt: 스케쥴 조회시 스케쥴 상태 조건 추가
 '''
     Repository Naming Rule
         method(select, update, delete, insert)_Record_by_condition

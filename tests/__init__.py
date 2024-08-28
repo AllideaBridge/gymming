@@ -17,6 +17,8 @@ class BaseTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.app = create_app('test')
+        cls.app.testing = True
+        cls.app.debug = False
         cls.app_context = cls.app.app_context()
         cls.app_context.push()
         db.drop_all()

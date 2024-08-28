@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from app.entities.entity_trainer import Trainer
 from app.entities.entity_trainer_user import TrainerUser
 from app.entities.entity_users import Users
+from app.entities.entity_schedule import Schedule
 from app.repositories.repository_base import BaseRepository
 
 

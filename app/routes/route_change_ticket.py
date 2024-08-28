@@ -1,5 +1,7 @@
+from firebase_admin import messaging
 from flask import request
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_pydantic import validate
 from flask_restx import Namespace, Resource
 from marshmallow import ValidationError
 
@@ -20,9 +22,9 @@ class ChangeTicket(Resource):
         self.change_ticket_service = ServiceFactory.change_ticket_service()
 
     @jwt_required()
-    def post(self):
+    @validate()
+    def post(self, body: CreateChangeTicketRequest):
         try:
-            body = CreateChangeTicketRequest(**request.json)
             current_auth: dict = get_jwt_identity()
 
             if body.change_from == const.CHANGE_FROM_USER:
@@ -48,6 +50,7 @@ class ChangeTicketWithID(Resource):
         super().__init__(*args, **kwargs)
         self.change_ticket_service = ServiceFactory.change_ticket_service()
 
+    # 해당 api는 사용하지 않고, 리스트 조회에서 받은 값으로 대체 가능.
     @ns_change_ticket.marshal_with(ChangeTicketResponse.change_ticket)
     @jwt_required()
     def get(self, change_ticket_id):
@@ -66,10 +69,9 @@ class ChangeTicketWithID(Resource):
             return {'message': e.message}, 400
 
     @jwt_required()
-    def put(self, change_ticket_id):
+    @validate()
+    def put(self, change_ticket_id, body:UpdateChangeTicketRequest):
         try:
-            body = UpdateChangeTicketRequest(**request.json)
-
             self.change_ticket_service.handle_update_change_ticket(change_ticket_id, body)
 
             return {'message': '변경 티켓을 수정했습니다.'}, 200
@@ -160,8 +162,8 @@ class UserChangeTicketHistory(Resource):
         return result
 
 # 컨트롤러의 역할 : 유효성 검사
-# todo : 중앙집중식 에러 처리. 에러 헨들러 작성.
-# todo : 로깅.
-# todo : 환경 변수 적용
-# todo : 리스트 조회시 pagenation 적용.
-# todo : 시간 지난 pt 완료 처리 하는 api? batch?
+# todo.txt : 중앙집중식 에러 처리. 에러 헨들러 작성.
+# todo.txt : 로깅.
+# todo.txt : 환경 변수 적용
+# todo.txt : 리스트 조회시 pagenation 적용.
+# todo.txt : 시간 지난 pt 완료 처리 하는 api? batch?

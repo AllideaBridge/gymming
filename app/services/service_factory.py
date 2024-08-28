@@ -9,6 +9,7 @@ from app.repositories.repository_trainer_user import TrainerUserRepository
 from app.repositories.repository_user_fcm_token import UserFcmTokenRepository
 from app.repositories.repository_users import UserRepository
 from app.services.service_change_ticket import ChangeTicketService
+from app.services.service_fcm import FcmService
 from app.services.service_image import ImageService
 from app.services.service_schedule import ScheduleService
 from app.services.service_trainer import TrainerService
@@ -33,7 +34,9 @@ class ServiceFactory:
             schedule_service=ServiceFactory.schedule_service(),
             user_repository=UserRepository(db=db),
             trainer_user_repository=TrainerUserRepository(db=db),
-            trainer_repository=TrainerRepository(db=db)
+            trainer_repository=TrainerRepository(db=db),
+            message_service=FcmService(),
+            user_fcm_token_repository=UserFcmTokenRepository(db=db)
         )
 
     @staticmethod
@@ -50,7 +53,10 @@ class ServiceFactory:
             schedule_repository=ScheduleRepository(db=db),
             trainer_availability_repository=TrainerAvailabilityRepository(db=db),
             trainer_user_repository=TrainerUserRepository(db=db),
-            trainer_repository=TrainerRepository(db=db)
+            trainer_repository=TrainerRepository(db=db),
+            message_service=FcmService(),
+            trainer_fcm_token_repository=TrainerFcmTokenRepository(db=db),
+            user_repository=UserRepository(db=db)
         )
 
     @staticmethod

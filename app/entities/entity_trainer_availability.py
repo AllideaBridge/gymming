@@ -1,7 +1,7 @@
 from database import db
 
 
-# todo : (trainer_id, week_day)는 유니크 해야 함. (조인조건이 유니크 하지 않으면 중복 데이터 발생) 로직으로 막기 vs 디비 키 설정 하기.
+# todo.txt : (trainer_id, week_day)는 유니크 해야 함. (조인조건이 유니크 하지 않으면 중복 데이터 발생) 로직으로 막기 vs 디비 키 설정 하기.
 class TrainerAvailability(db.Model):
     trainer_availability_id = db.Column(db.Integer, primary_key=True)
     trainer_id = db.Column(db.Integer, db.ForeignKey('trainer.trainer_id'), nullable=False)

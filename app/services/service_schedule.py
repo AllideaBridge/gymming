@@ -10,11 +10,14 @@ from app.entities.entity_schedule import Schedule
 class ScheduleService:
 
     def __init__(self, schedule_repository, trainer_availability_repository, trainer_user_repository,
-                 trainer_repository):
+                 trainer_repository, message_service, trainer_fcm_token_repository, user_repository):
         self.schedule_repository = schedule_repository
         self.trainer_availability_repository = trainer_availability_repository
         self.trainer_user_repository = trainer_user_repository
         self.trainer_repository = trainer_repository
+        self.message_service = message_service
+        self.trainer_fcm_token_repository = trainer_fcm_token_repository
+        self.user_repository = user_repository
 
     def handle_get_user_schedule(self, user_id, date_str, schedule_type):
         date_obj = datetime.strptime(date_str, "%Y-%m-%d")
@@ -56,8 +59,6 @@ class ScheduleService:
 
         return {"result": data}
 
-    # todo : ScheduleChangeResource
-    # todo : ScheduleCancelResource
 
     def handle_change_user_schedule(self, schedule_id, start_time, status):
         if status == SCHEDULE_MODIFIED:
@@ -67,7 +68,11 @@ class ScheduleService:
         raise BadRequestError
 
     def _change_schedule(self, schedule_id, start_time):
-        # todo : 스케쥴 변경 가능 범위인지 확인.
+        # 스케쥴 변경 가능 범위인지 확인.
+        changeable = self.validate_schedule_change(schedule_id=schedule_id).get('result')
+        if changeable is None or not changeable:
+            raise BadRequestError(
+                message=f'Schedule is not changeable.Lesson change range overflow. schedule_id : {schedule_id}')
 
         schedule = self.schedule_repository.get(schedule_id)
         if not schedule:
@@ -84,8 +89,7 @@ class ScheduleService:
 
         schedule.schedule_status = SCHEDULE_MODIFIED
         schedule.schedule_start_time = start_time
-        self.schedule_repository.create(schedule)
-
+        self.schedule_repository.update(schedule)
         return {'message': 'Schedule updated successfully'}, 200
 
     def _cancel_schedule(self, schedule_id):
@@ -95,11 +99,13 @@ class ScheduleService:
             raise ApplicationError(f"Schedule not found {schedule_id}", 404)
 
         schedule.schedule_status = SCHEDULE_CANCELLED
-        self.schedule_repository.create(schedule)
+        lesson = schedule.lesson
+        lesson.lesson_current_count += 1
+        self.schedule_repository.update(schedule)
         return {'message': 'Schedule cancel successfully'}, 200
 
     def delete_schedule(self, schedule_id):
-        # todo : 스케쥴 변경 가능 범위인지 확인.
+        # todo.txt : 스케쥴 변경 가능 범위인지 확인.
         schedule = self.schedule_repository.get(schedule_id)
         deleted = self.schedule_repository.delete(schedule)
         if deleted:
@@ -225,8 +231,7 @@ class ScheduleService:
         if schedule is None:
             raise BadRequestError
 
-        lesson_change_range_row = self.schedule_repository.select_lesson_change_range_by_schedue_id(schedule_id)
-        lesson_change_range = lesson_change_range_row.lesson_change_range
+        lesson_change_range = schedule.lesson_change_range
 
         current_time = datetime.now()
         diff = schedule.schedule_start_time - current_time
@@ -254,7 +259,10 @@ class ScheduleService:
             "center_location": schedule.center_location,
         }
 
-    def create_schedule(self, trainer_id, user_id, schedule_start_time):
+    def create_schedule(self, body):
+        trainer_id = body.trainer_id
+        user_id = body.user_id
+        schedule_start_time = datetime.strptime(body.schedule_start_time, DATETIMEFORMAT)
         trainer_user = self.trainer_user_repository.select_by_trainer_id_and_user_id(trainer_id, user_id)
         if not trainer_user:
             raise BadRequestError("Trainer-User relationship not found")
@@ -276,5 +284,17 @@ class ScheduleService:
             schedule_start_time=schedule_start_time,
             schedule_status=SCHEDULE_SCHEDULED
         )
+
+        # 스케쥴 생성
         self.schedule_repository.create(schedule)
+
+        # 트레이너에게 푸쉬 알람 전송
+        user = self.user_repository.get(user_id)
+        trainer_fcm_token = self.trainer_fcm_token_repository.get_by_trainer_id(trainer_id)
+        data = {
+            'schedule_start_time': body.schedule_start_time
+        }
+        self.message_service.send_message(title='수업 신청', body=f'{user.user_name}님이 수업을 신청하였습니다.',
+                                          token=trainer_fcm_token.fcm_token, data=data)
+
         return {"message": "success"}

@@ -24,6 +24,7 @@ class Trainer(db.Model):
     center_location = db.Column(db.String(100), nullable=True)
     center_number = db.Column(db.String(20), nullable=True)
     center_type = db.Column(db.String(20), nullable=True)
+    trainer_users = db.relationship('TrainerUser', backref='trainer', lazy=True)
 
     @staticmethod
     def conflict_trainer_schedule(trainer_id, request_time):

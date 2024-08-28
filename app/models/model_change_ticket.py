@@ -13,6 +13,7 @@ class CreateChangeTicketRequest(BaseModel):
     change_type: str = Field()
     change_reason: str = Field()
     start_time: str = Field()
+    as_is_date: str = Field()
 
     @field_validator('shcedule_id')
     @classmethod
@@ -71,8 +72,9 @@ class UpdateChangeTicketRequest(BaseModel):
     @field_validator('status')
     @classmethod
     def validate(cls, value: str):
-        if value not in [const.CHANGE_TICKET_STATUS_WAITING, const.CHANGE_TICKET_STATUS_APPROVED,
-                         const.CHANGE_TICKET_STATUS_REJECTED, const.CHANGE_TICKET_STATUS_CANCELED]:
+        if value not in [const.CHANGE_TICKET_STATUS_APPROVED,
+                         const.CHANGE_TICKET_STATUS_REJECTED,
+                         const.CHANGE_TICKET_STATUS_CANCELED]:
             raise BadRequestError()
         return value
 
@@ -91,6 +93,20 @@ class UpdateChangeTicketRequest(BaseModel):
     def validate(cls, value: Any):
         return value
 
+
+class ChangeTicketForTrainer(BaseModel):
+    id: int = Field(),
+    user_name: str = Field(),
+    change_ticket_type: str = Field(),
+    as_is_date: str = Field(),
+    to_be_date: str = Field(),
+    created_at: str = Field(),
+    change_ticket_status: str = Field(),
+    user_message: str = Field(),
+    trainer_message: str = Field()
+
+class ChangeTicketListForTrainer(BaseModel):
+    []
 
 class ChangeTicketResponse:
     change_ticket = Model('ChangeTicketList', {

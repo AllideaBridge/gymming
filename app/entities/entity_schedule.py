@@ -7,8 +7,4 @@ class Schedule(db.Model):
     schedule_start_time = db.Column(db.DateTime)
     schedule_status = db.Column(db.String(20))
     schedule_delete_flag = db.Column(db.Boolean, default=False)
-
-    @staticmethod
-    def find_by_id(schedule_id):
-        return Schedule.query.filter_by(schedule_id=schedule_id).first()
-
+    change_ticket = db.relationship('ChangeTicket', backref='schedule', lazy=True)
