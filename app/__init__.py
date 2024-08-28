@@ -1,5 +1,7 @@
 import logging
+import os
 
+import firebase_admin
 from flask import Flask
 from flask_jwt_extended import JWTManager
 from flask_restx import Api
@@ -20,10 +22,18 @@ from app.entities.entity_trainer import Trainer
 from app.entities.entity_trainer_pr_image import TrainerPrImage
 from app.entities.entity_users import Users
 from app.entities.entity_trainer_availability import TrainerAvailability
+from firebase_admin import credentials
 
 
 def create_app(env):
     app = Flask(__name__)
+
+    project_root = os.path.dirname(os.path.abspath(__file__))
+
+    # Firebase 초기화
+    cred_path = os.path.join(project_root, 'gymming-firebase-adminsdk.json')
+    cred = credentials.Certificate(cred_path)
+    firebase_admin.initialize_app(cred)
 
     api = Api(app, version='1.0', title='Gymming', description='Gymming api', doc="/api-docs")
     api.add_namespace(ns_user)
@@ -46,10 +56,10 @@ def create_app(env):
     # db 인스턴스 초기화
     db.init_app(app)
 
-    ## todo : 나중에 키 설정
+    ## todo.txt : 나중에 키 설정
     app.config['JWT_SECRET_KEY'] = 'your_secret_key'
 
-    ## todo : 지우기
+    ## todo.txt : 지우기
     # app.config['JWT_REFRESH_TOKEN_EXPIRES'] = timedelta(days=7)
 
     JWTManager(app)

@@ -12,6 +12,7 @@ class ChangeTicket(db.Model):
     description = db.Column(db.String(255), nullable=True)
     status = db.Column(db.String(20), nullable=True, default=CHANGE_TICKET_STATUS_WAITING)
     request_time = db.Column(db.DateTime, nullable=True)
+    as_is_date = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     reject_reason = db.Column(db.String(255), nullable=True)
 
@@ -21,7 +22,8 @@ class ChangeTicket(db.Model):
                  description=None,
                  status=CHANGE_TICKET_STATUS_WAITING,
                  request_time=None,
-                 reject_reason=None):
+                 reject_reason=None,
+                 as_is_date=None):
         self.schedule_id = schedule_id
         self.change_from = change_from
         self.change_type = change_type
@@ -30,6 +32,7 @@ class ChangeTicket(db.Model):
         self.request_time = request_time
         self.created_at = datetime.utcnow()
         self.reject_reason = reject_reason
+        self.as_is_date = as_is_date
 
     def to_dict(self):
         return {

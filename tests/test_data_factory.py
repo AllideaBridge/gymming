@@ -5,6 +5,9 @@ from flask_jwt_extended import create_access_token
 from app import db, Trainer, Users, TrainerUser, Schedule, ChangeTicket
 from datetime import datetime, timedelta
 
+from app.entities.entity_trainer_fcm_token import TrainerFcmToken
+from app.entities.entity_user_fcm_token import UserFcmToken
+
 
 class TestDataFactory:
     @staticmethod
@@ -87,7 +90,8 @@ class TestDataFactory:
             change_type=kwargs.get('change_type', 'change_type'),
             description=kwargs.get('description', 'description'),
             status=kwargs.get('status', 'status'),
-            request_time=kwargs.get('request_time', datetime.now())
+            request_time=kwargs.get('request_time', datetime.now()),
+            as_is_date=kwargs.get('as_is_date', datetime.now() - timedelta(days=1))
         )
 
         db.session.add(change_ticket)
@@ -122,6 +126,32 @@ class TestDataFactory:
         identity = {"trainer_id": trainer_id}
         access_token = create_access_token(identity=identity)
         return {'Authorization': f'Bearer {access_token}'}
+
+    @staticmethod
+    def create_trainer_fcm_token(trainer=None, **kwargs):
+        if trainer is None:
+            trainer = TestDataFactory.create_trainer()
+
+        trainer_fcm_token = TrainerFcmToken(
+            trainer_id=trainer.trainer_id,
+            fcm_token=kwargs.get('fcm_token', "aasdasdasdasd")
+        )
+        db.session.add(trainer_fcm_token)
+        db.session.commit()
+        return trainer_fcm_token
+
+    @staticmethod
+    def create_user_fcm_token(user=None, **kwargs):
+        if user is None:
+            user = TestDataFactory.create_user()
+
+        user_fcm_token = UserFcmToken(
+            user_id=user.user_id,
+            fcm_token=kwargs.get('fcm_token', "aasdasdasdasd")
+        )
+        db.session.add(user_fcm_token)
+        db.session.commit()
+        return user_fcm_token
 
 
 class ScheduleBuilder:

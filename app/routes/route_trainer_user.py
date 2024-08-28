@@ -3,9 +3,10 @@ from flask_restx import Namespace, Resource
 from marshmallow import ValidationError
 
 from app.common.exceptions import BadRequestError, UnAuthorizedError
-from app.models.model_trainer_user import users_of_trainer, trainers_of_user, user_detail_of_trainer
+from app.models.model_trainer_user import users_of_trainer, user_detail_of_trainer, UserTrainersResponse
 from app.routes.models.model_trainer_user import CreateTrainerUserRelationRequest, UpdateTrainerUserRequest
 from app.services.service_factory import ServiceFactory
+from app.validators.response_validators import validate_response
 
 ns_trainer_user = Namespace('trainer-user', description='TrainerUser API')
 
@@ -98,8 +99,9 @@ class UserTrainers(Resource):
         super().__init__(*args, **kwargs)
         self.tu_service = ServiceFactory.trainer_user_service()
 
-    @ns_trainer_user.marshal_with(trainers_of_user)
+
     @jwt_required()
+    @validate_response(UserTrainersResponse)
     def get(self, user_id):
         current_user = get_jwt_identity()
 

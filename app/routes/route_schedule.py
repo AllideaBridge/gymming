@@ -1,11 +1,13 @@
 from datetime import datetime
 
 from flask import request
+from flask_pydantic import validate
 from flask_restx import Namespace, Resource, fields
 from marshmallow import ValidationError
 
 from app.common.constants import DATETIMEFORMAT, DATEFORMAT
 from app.common.exceptions import ApplicationError
+from app.models.model_schedule import ScheduleCreateRequest
 from app.services.service_factory import ServiceFactory
 
 ns_schedule = Namespace('schedules', description='Schedules related operations', path='/schedules')
@@ -17,13 +19,10 @@ class Schedules(Resource):
         super().__init__(*args, **kwargs)
         self.schedule_service = ServiceFactory.schedule_service()
 
-    def post(self):
-        data = request.json
-        trainer_id = data.get('trainer_id')
-        user_id = data.get('user_id')
-        schedule_start_time = datetime.strptime(data.get('schedule_start_time'), DATETIMEFORMAT)
+    @validate()
+    def post(self, body: ScheduleCreateRequest):
         try:
-            result = self.schedule_service.create_schedule(trainer_id, user_id, schedule_start_time)
+            result = self.schedule_service.create_schedule(body=body)
         except ApplicationError as e:
             return {'message': e.message}, 400
 

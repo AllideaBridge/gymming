@@ -1,10 +1,14 @@
 import http.client
 
-from app.common.exceptions import ApplicationError
+from app.common.exceptions import ApplicationError, BadRequestError
 
 
 def register_error_handlers(app):
     @app.errorhandler(ApplicationError)
+    def handle_application_error(error):
+        return {"message": error.message}, error.status_code
+
+    @app.errorhandler(BadRequestError)
     def handle_application_error(error):
         return {"message": error.message}, error.status_code
 

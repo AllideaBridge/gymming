@@ -1,4 +1,7 @@
+from typing import List
+
 from flask_restx import fields, Model
+from pydantic import BaseModel, Field, field_validator
 
 user_of_trainer = Model('UserOfTrainer', {
     'user_id': fields.Integer(readOnly=True, description='The user unique identifier'),
@@ -15,19 +18,21 @@ users_of_trainer = {
     'results': fields.List(fields.Nested(user_of_trainer))
 }
 
-trainer_of_user = Model('TrainerOfUser', {
-    'trainer_id': fields.Integer(readOnly=True, description='The trainer unique identifier'),
-    'trainer_name': fields.String(description='Trainer name'),
-    'trainer_profile_img_url': fields.String(description='Trainer profile image URL'),
-    'lesson_current_count': fields.Integer(description='Lesson Current Count'),
-    'lesson_total_count': fields.Integer(description='Lesson Total Count'),
-    'center_name': fields.String(description='센터 이름'),
-    'center_location': fields.String(description='센터 위치'),
-})
 
-trainers_of_user = {
-    'results': fields.List(fields.Nested(trainer_of_user))
-}
+class UserTrainer(BaseModel):
+    trainer_id: int = Field(description="trainer_id")
+    trainer_name: str = Field(description="trainer_name")
+    trainer_profile_img_url: str = Field(description="trainer_profile_img_url")
+    lesson_name: str = Field(description="lesson_name")
+    lesson_current_count: int = Field(description="lesson_current_count")
+    lesson_total_count: int = Field(description="lesson_total_count")
+    center_name: str = Field(description="center_name")
+    center_location: str = Field(description="center_location")
+
+
+class UserTrainersResponse(BaseModel):
+    results: List[UserTrainer]
+
 
 user_detail_of_trainer = Model('User Details of Trainer', {
     'name': fields.String(description='User name'),

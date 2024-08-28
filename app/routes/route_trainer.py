@@ -24,7 +24,7 @@ ns_trainer = Namespace('trainers', description='Trainer API')
 class TrainerResource(Resource):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.image_service = ImageService()
+        self.image_service = ServiceFactory.image_service()
         self.trainer_service = ServiceFactory.trainer_service()
 
     @ns_trainer.marshal_with(trainer_show_model)

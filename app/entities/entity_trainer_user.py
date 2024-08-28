@@ -10,7 +10,7 @@ class TrainerUser(db.Model):
     lesson_total_count = db.Column(db.Integer, default=0)
     lesson_current_count = db.Column(db.Integer, default=0)
     trainer_user_delete_flag = db.Column(db.Boolean, default=False)
-    schedules = db.relationship('Schedule', backref='lesson', lazy='dynamic')
+    schedules = db.relationship('Schedule', backref='lesson', lazy=True)
     exercise_days = db.Column(db.String(50), nullable=True)
     special_notes = db.Column(db.String(255), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

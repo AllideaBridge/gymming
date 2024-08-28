@@ -50,6 +50,7 @@ class TrainersRelatedUserResponse:
     trainer_id: int
     trainer_name: str
     trainer_profile_img_url: str
+    lesson_name: str
     lesson_total_count: int
     lesson_current_count: int
     center_name: str
@@ -61,6 +62,7 @@ class TrainersRelatedUserResponse:
             "trainer_id": trainer.trainer_id,
             "trainer_name": trainer.trainer_name,
             "trainer_profile_img_url": trainer.trainer_profile_img_url,
+            "lesson_name": trainer.lesson_name,
             "lesson_total_count": trainer_user.lesson_total_count,
             "lesson_current_count": trainer_user.lesson_current_count,
             "center_name": "Center 아직 적용 안함",
