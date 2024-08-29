@@ -38,8 +38,11 @@ class ChangeTicket(Resource):
                                         const.CHANGE_TICKET_TYPE_CANCEL]:
                 raise ValidationError(message=f"change_type can be {const.CHANGE_TICKET_TYPE_CANCEL} "
                                               f"or {const.CHANGE_TICKET_TYPE_MODIFY}")
-            self.change_ticket_service.create_change_ticket(body)
-            return {'message': '새 변경 요청이 대기 상태로 생성되었습니다.'}, 200
+            change_ticket = self.change_ticket_service.create_change_ticket(body)
+            return {
+                'change_ticket_id': change_ticket.id,
+                'message': '새 변경 요청이 대기 상태로 생성되었습니다.'
+            }, 200
         except ValidationError as e:
             return {'message': '입력 데이터가 올바르지 않습니다.', 'errors': e.messages}, 400
 
@@ -70,7 +73,7 @@ class ChangeTicketWithID(Resource):
 
     @jwt_required()
     @validate()
-    def put(self, change_ticket_id, body:UpdateChangeTicketRequest):
+    def put(self, change_ticket_id, body: UpdateChangeTicketRequest):
         try:
             self.change_ticket_service.handle_update_change_ticket(change_ticket_id, body)
 

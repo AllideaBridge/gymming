@@ -6,7 +6,7 @@ from tests.test_data_factory import TestDataFactory
 
 class UserTestCase(BaseTestCase):
 
-    def test_유저_이름과_핸드폰번호로_조회(self):
+    def test_유저_이름과_핸드폰번호로_조회되면_user_id를_리턴한다(self):
         trainer = TestDataFactory.create_trainer()
         headers = TestDataFactory.create_trainer_auth_header(trainer.trainer_id)
 
@@ -18,6 +18,21 @@ class UserTestCase(BaseTestCase):
                                    headers=headers)
 
         self.assertEqual(response.status_code, 200)
+        self.assertIsNotNone(response.get_json()['user_id'])
+        print(response.get_json())
+
+    def test_유저_이름과_핸드폰번호로_조회되지_않으면_user_id_None을_리턴한다(self):
+        trainer = TestDataFactory.create_trainer()
+        headers = TestDataFactory.create_trainer_auth_header(trainer.trainer_id)
+
+        user_name = "ajskldjasldjalkdjla"
+        user_phone_number = "010-0001-5746"
+
+        response = self.client.get(f'/users/check?user_name={user_name}&user_phone_number={user_phone_number}',
+                                   headers=headers)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(response.get_json()['user_id'])
         print(response.get_json())
 
     def test_유저_상세_조회_이미지_포함(self):

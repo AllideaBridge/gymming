@@ -14,7 +14,8 @@ from app.models.model_change_ticket import CreateChangeTicketRequest, UpdateChan
 
 class ChangeTicketService:
     def __init__(self, change_ticket_repository, schedule_repository, schedule_service, user_repository,
-                 trainer_user_repository, trainer_repository, message_service, user_fcm_token_repository):
+                 trainer_user_repository, trainer_repository, message_service, user_fcm_token_repository,
+                 trainer_fcm_token_repository):
         self.change_ticket_repository = change_ticket_repository
         self.schedule_repository = schedule_repository
         self.schedule_service = schedule_service
@@ -23,6 +24,7 @@ class ChangeTicketService:
         self.trainer_repository = trainer_repository
         self.message_service = message_service
         self.user_fcm_token_repository = user_fcm_token_repository
+        self.trainer_fcm_token_repository = trainer_fcm_token_repository
 
     def get_change_ticket_by_id(self, change_ticket_id) -> ChangeTicket:
         result = self.change_ticket_repository.get(change_ticket_id)
@@ -49,8 +51,36 @@ class ChangeTicketService:
             request_time=data.start_time,
             as_is_date=data.as_is_date
         )
-        self.change_ticket_repository.create(new_change_ticket)
-        return True
+
+        change_ticket = self.change_ticket_repository.create(new_change_ticket)
+
+        lesson = schedule.lesson
+
+        sender_name = ""
+        receiver_fcm_token = ""
+
+        # 트레이너에게 전송
+        if data.change_from == const.CHANGE_FROM_USER:
+            sender_name = self.user_repository.get(lesson.user_id).user_name
+            receiver_fcm_token = self.trainer_fcm_token_repository.get_by_trainer_id(lesson.trainer_id).fcm_token
+
+        # 유저에게 전송
+        if data.change_from == const.CHANGE_FROM_TRAINER:
+            sender_name = self.trainer_repository.get(lesson.trainer_id).trainer_name
+            receiver_fcm_token = self.user_fcm_token_repository.get_by_user_id(lesson.user_id).fcm_token
+
+        # 푸쉬 알람 전송
+        data = {
+            'change_ticket': new_change_ticket
+        }
+
+        change_type = "변경" if new_change_ticket.change_type == const.CHANGE_TICKET_TYPE_MODIFY else "취소"
+
+        self.message_service.send_message(title=f'{change_type} 신청',
+                                          body=f'{sender_name}님이 수업 {change_type} 신청을 하였습니다.',
+                                          token=receiver_fcm_token, data=data)
+
+        return change_ticket
 
     def handle_update_change_ticket(self, change_ticket_id, data: UpdateChangeTicketRequest):
         change_ticket_to_update = self.change_ticket_repository.get(change_ticket_id)

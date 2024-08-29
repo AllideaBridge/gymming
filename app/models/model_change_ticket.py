@@ -12,7 +12,7 @@ class CreateChangeTicketRequest(BaseModel):
     change_from: str = Field()
     change_type: str = Field()
     change_reason: str = Field()
-    start_time: str = Field()
+    start_time: str | None = Field(default=None)
     as_is_date: str = Field()
 
     @field_validator('shcedule_id')
