@@ -24,14 +24,18 @@ class TestChangeTicketApi(BaseTestCase):
         result = response.get_json()
         self.assertEqual(1, result['id'])
 
-    def test_유저_티켓생성(self):
+
+    @patch('app.services.service_fcm.FcmService.send_message')
+    def test_유저_변경_티켓_생성(self, mock_send_message):
         user = TestDataFactory.create_user()
-        schedule = ScheduleBuilder().with_user(user).build()
+        trainer = TestDataFactory.create_trainer()
+        trainer_fcm_token = TestDataFactory.create_trainer_fcm_token(trainer)
+        schedule = ScheduleBuilder().with_user(user).with_trainer(trainer).build()
 
         body = {
             "schedule_id": schedule.schedule_id,
-            "change_from": "USER",
-            "change_type": "CANCEL",
+            "change_from": const.CHANGE_FROM_USER,
+            "change_type": const.CHANGE_TICKET_TYPE_MODIFY,
             "change_reason": "그냥",
             "start_time": "2024-05-13T12:00:00",
             "as_is_date": "2024-05-12T12:00:00"
@@ -41,6 +45,46 @@ class TestChangeTicketApi(BaseTestCase):
         response = self.client.post(f'/change-ticket', headers=headers, json=body)
 
         self.assertEqual(response.status_code, 200)
+
+        change_ticket_id = response.get_json()['change_ticket_id']
+        change_ticket_from_db = ChangeTicket.query.get(change_ticket_id)
+
+        mock_send_message.assert_called_once_with(
+            title='변경 신청',
+            body=f'{user.user_name}님이 수업 변경 신청을 하였습니다.',
+            token=trainer_fcm_token.fcm_token,  # 정확한 토큰 값을 확인하세요
+            data={'change_ticket': change_ticket_from_db}
+        )
+
+    @patch('app.services.service_fcm.FcmService.send_message')
+    def test_유저_취소_티켓_생성(self, mock_send_message):
+        user = TestDataFactory.create_user()
+        trainer = TestDataFactory.create_trainer()
+        trainer_fcm_token = TestDataFactory.create_trainer_fcm_token(trainer)
+        schedule = ScheduleBuilder().with_user(user).with_trainer(trainer).build()
+
+        body = {
+            "schedule_id": schedule.schedule_id,
+            "change_from": const.CHANGE_FROM_USER,
+            "change_type": const.CHANGE_TICKET_TYPE_CANCEL,
+            "change_reason": "그냥",
+            "as_is_date": "2024-05-12T12:00:00"
+        }
+
+        headers = TestDataFactory.create_user_auth_header(user.user_id)
+        response = self.client.post(f'/change-ticket', headers=headers, json=body)
+
+        self.assertEqual(response.status_code, 200)
+
+        change_ticket_id = response.get_json()['change_ticket_id']
+        change_ticket_from_db = ChangeTicket.query.get(change_ticket_id)
+
+        mock_send_message.assert_called_once_with(
+            title='취소 신청',
+            body=f'{user.user_name}님이 수업 취소 신청을 하였습니다.',
+            token=trainer_fcm_token.fcm_token,  # 정확한 토큰 값을 확인하세요
+            data={'change_ticket': change_ticket_from_db}
+        )
 
     def test_이미_티켓이_있는_경우_티켓_생성을_하면_400을_응답한다(self):
         user = TestDataFactory.create_user()

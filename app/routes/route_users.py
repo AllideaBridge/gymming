@@ -31,7 +31,7 @@ user_model = ns_user.model('Users', {
 class UserResource(Resource):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.image_service = ImageService()
+        self.image_service = ServiceFactory.image_service()
         self.user_service = ServiceFactory.user_service()
 
     @ns_user.marshal_with(user_show_response)

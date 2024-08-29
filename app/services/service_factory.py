@@ -36,7 +36,8 @@ class ServiceFactory:
             trainer_user_repository=TrainerUserRepository(db=db),
             trainer_repository=TrainerRepository(db=db),
             message_service=FcmService(),
-            user_fcm_token_repository=UserFcmTokenRepository(db=db)
+            user_fcm_token_repository=UserFcmTokenRepository(db=db),
+            trainer_fcm_token_repository=TrainerFcmTokenRepository(db=db)
         )
 
     @staticmethod
