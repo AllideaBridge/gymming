@@ -37,7 +37,7 @@ class TestChangeTicketApi(BaseTestCase):
             "change_from": const.CHANGE_FROM_USER,
             "change_type": const.CHANGE_TICKET_TYPE_MODIFY,
             "change_reason": "그냥",
-            "start_time": "2024-05-13T12:00:00",
+            "start_time": (datetime.now() + timedelta(hours=1)).strftime(const.DATETIMEFORMAT),
             "as_is_date": "2024-05-12T12:00:00"
         }
 
@@ -96,7 +96,7 @@ class TestChangeTicketApi(BaseTestCase):
             "change_from": "USER",
             "change_type": "CANCEL",
             "change_reason": "그냥",
-            "start_time": "2024-05-13T12:00:00",
+            "start_time": (datetime.now() + timedelta(hours=1)).strftime(const.DATETIMEFORMAT),
             "as_is_date": "2024-05-12T12:00:00"
         }
 
@@ -262,7 +262,7 @@ class TestChangeTicketApi(BaseTestCase):
             "change_from": const.CHANGE_FROM_USER,
             "change_type": "INVALID_CHANGE_TYPE",
             "change_reason": "그냥",
-            "start_time": "2024-05-13T12:00:00"
+            "start_time": (datetime.now() + timedelta(hours=1)).strftime(const.DATETIMEFORMAT)
         }
 
         headers = TestDataFactory.create_user_auth_header(user.user_id)
@@ -362,6 +362,22 @@ class TestChangeTicketApi(BaseTestCase):
             token=user_fcm_token.fcm_token,  # 정확한 토큰 값을 확인하세요
             data={'change_ticket': change_ticket}
         )
+
+    def test_요청시작시간이_현재시간보다_이전인_경우(self):
+        user = TestDataFactory.create_user()
+        schedule = TestDataFactory.create_schedule()
+
+        body = {
+            "schedule_id": schedule.schedule_id,
+            "change_from": const.CHANGE_FROM_USER,
+            "change_type": "INVALID_CHANGE_TYPE",
+            "change_reason": "그냥",
+            "start_time": (datetime.now() - timedelta(hours=1)).strftime(const.DATETIMEFORMAT)
+        }
+
+        headers = TestDataFactory.create_user_auth_header(user.user_id)
+        response = self.client.post(f'/change-ticket', headers=headers, json=body)
+        self.assertEqual(response.status_code, 400)
 
     def test_변경티켓_상태가_WAITING이_아닐때_수정할_경우(self):
         user = TestDataFactory.create_user()
