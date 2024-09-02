@@ -1,12 +1,21 @@
+from app.entities.entity_trainer import Trainer
 from app.common.exceptions import BadRequestError
 from app.entities.entity_trainer_fcm_token import TrainerFcmToken
 
 
 class TrainerService:
-    def __init__(self, trainer_repository, trainer_availability_repository, trainer_fcm_repository):
+    def __init__(self, trainer_repository, trainer_availability_repository, trainer_fcm_repository, image_service):
         self.trainer_repository = trainer_repository
         self.trainer_availability_repository = trainer_availability_repository
         self.trainer_fcm_repository = trainer_fcm_repository
+    def get_trainer_by_id(self, trainer_id):
+        trainer: Trainer = self.trainer_repository.get(trainer_id)
+        trainer = trainer.__dict__
+
+        presigned_url = self.image_service.get_presigned_url(f'trainer/{trainer_id}/profile')
+        trainer['trainer_profile_img_url'] = presigned_url
+
+        return trainer
 
     def get_trainer_by_social_id(self, trainer_social_id):
         return self.trainer_repository.select_trainer_by_social_id(trainer_social_id)

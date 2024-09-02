@@ -31,19 +31,13 @@ class TrainerResource(Resource):
     @jwt_required()
     def get(self, trainer_id):
         current_trainer = get_jwt_identity()
+        try:
+            if trainer_id != current_trainer['trainer_id']:
+                raise UnAuthorizedError(message="유효하지 않는 id입니다.")
 
-        if trainer_id != current_trainer['trainer_id']:
-            raise UnAuthorizedError(message="유효하지 않는 id입니다.")
-
-        trainer = Trainer.query.filter_by(trainer_id=trainer_id).first()
-        if trainer is None:
-            raise BadRequestError("존재하지 않는 트레이너 입니다.")
-
-        presigned_url = self.image_service.get_presigned_url(f'trainer/{trainer.trainer_id}/profile')
-        if presigned_url is not None:
-            trainer.trainer_profile_img_url = presigned_url
-
-        return trainer
+            return self.trainer_service.get_trainer_by_id(trainer_id)
+        except BadRequestError as e:
+            return {'message': e.message}, 400
 
     # @ns_trainer.expect(trainer_model, validate=True)
     # @ns_trainer.marshal_with(trainer_model)
