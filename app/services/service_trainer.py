@@ -8,9 +8,14 @@ class TrainerService:
         self.trainer_repository = trainer_repository
         self.trainer_availability_repository = trainer_availability_repository
         self.trainer_fcm_repository = trainer_fcm_repository
+        self.image_service = image_service
+
     def get_trainer_by_id(self, trainer_id):
         trainer: Trainer = self.trainer_repository.get(trainer_id)
         trainer = trainer.__dict__
+
+        trainer_availability = self.trainer_availability_repository.get_by_trainer_id(trainer_id)
+        trainer['trainer_availability'] = trainer_availability
 
         presigned_url = self.image_service.get_presigned_url(f'trainer/{trainer_id}/profile')
         trainer['trainer_profile_img_url'] = presigned_url
