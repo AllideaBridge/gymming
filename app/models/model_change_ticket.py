@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any
 
 from flask_restx import fields, Model
@@ -44,6 +45,10 @@ class CreateChangeTicketRequest(BaseModel):
     @field_validator('start_time')
     @classmethod
     def validate(cls, value: str):
+        input_time = datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
+        current_time = datetime.now()
+        if input_time < current_time:
+            raise BadRequestError(message="트레이닝 시작 시간이 현재 시간보다 이전입니다. ")
         return value
 
 
