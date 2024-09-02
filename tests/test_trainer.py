@@ -52,6 +52,7 @@ class TrainerTestCase(BaseTestCase):
 
     def test_트레이너_상세조회(self):
         trainer = TestDataFactory.create_trainer()
+        TestDataFactory.create_trainer_availability(trainer=trainer)
         headers = TestDataFactory.create_trainer_auth_header(trainer.trainer_id)
         self.s3.put_object(Bucket='gymming', Key=f'trainer/{trainer.trainer_id}/profile',
                            Body=b'trainer image file data')
