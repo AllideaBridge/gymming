@@ -1,4 +1,5 @@
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_pydantic import validate
 from flask_restx import Namespace, Resource
 from marshmallow import ValidationError
 
@@ -37,12 +38,12 @@ class TrainerUsers(Resource):
             return {'message': '입력 데이터가 올바르지 않습니다.', 'errors': e.messages}, 400
 
     @jwt_required()
-    def post(self, trainer_id):
+    @validate()
+    def post(self, trainer_id, body: CreateTrainerUserRelationRequest):
         try:
             if trainer_id != get_jwt_identity()['trainer_id']:
                 raise UnAuthorizedError(message="유효하지 않는 id입니다.")
 
-            body = CreateTrainerUserRelationRequest(ns_trainer_user.payload)
             self.tu_service.create_trainer_user_relation(trainer_id, body)
             return {'message': '새로운 회원이 등록됐습니다.'}, 200
         except BadRequestError or ValidationError as e:
@@ -70,12 +71,12 @@ class TrainerUser(Resource):
             return {'message': '입력 데이터가 올바르지 않습니다.', 'errors': e.messages}, 400
 
     @jwt_required()
-    def put(self, trainer_id, user_id):
+    @validate()
+    def put(self, trainer_id, user_id, body: UpdateTrainerUserRequest):
         try:
             if trainer_id != get_jwt_identity()['trainer_id']:
                 raise UnAuthorizedError(message="유효하지 않는 id입니다.")
 
-            body = UpdateTrainerUserRequest(ns_trainer_user.payload)
             self.tu_service.update_trainer_user(trainer_id, user_id, body)
             return {'message': '회원정보가 수정됐습니다.'}, 200
         except ValidationError as e:

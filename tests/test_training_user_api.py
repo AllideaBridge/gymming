@@ -1,5 +1,8 @@
+import http
+
 import requests
 
+from app import TrainerUser
 from tests import BaseTestCase
 from tests.test_data_factory import TestDataFactory
 
@@ -162,50 +165,36 @@ class TrainerUserTestCase(BaseTestCase):
     #     self.assertEqual(user.user_delete_flag, data['user_delete_flag'])
     #     self.assertEqual(user.user_login_platform, data['user_login_platform'])
     #     self.assertEqual(user.user_birthday, data['user_birthday'])
-    #
-    # def test_트레이닝_회원_수정(self):
-    #     # Trainer 레코드 추가
-    #     trainer = Trainer(trainer_name='Test Trainer', trainer_email='test@example.com',
-    #                       trainer_gender='M', trainer_phone_number='010-0000-0000', lesson_minutes=60,
-    #                       lesson_change_range=3)
-    #     db.session.add(trainer)
-    #     db.session.commit()
-    #
-    #     # Users 데이터 생성
-    #     user = Users(
-    #         user_email="test@example.com",
-    #         user_name="Test User",
-    #         user_gender="M",
-    #         user_phone_number="010-1234-5678",
-    #         user_profile_img_url="http://example.com/profile.jpg",
-    #         user_login_platform="test_platform"
-    #     )
-    #     db.session.add(user)
-    #     db.session.commit()
-    #
-    #     # TrainingUser 데이터 생성
-    #     trainer_user = TrainerUser(trainer_id=trainer.trainer_id, user_id=user.user_id)
-    #     db.session.add(trainer_user)
-    #     db.session.commit()
-    #
-    #     trainer_user_id = trainer_user.trainer_user_id
-    #     lesson_total_count = 10
-    #     lesson_current_count = 10
-    #     response = self.client.put('/trainer/trainer-user/user', json={
-    #         'trainer_user_id': trainer_user_id,
-    #         'lesson_total_count': lesson_total_count,
-    #         'lesson_current_count': lesson_current_count
-    #     })
-    #
-    #     self.assertEqual(response.status_code, http.HTTPStatus.OK)
-    #
-    #     trainer_user_from_db = TrainerUser.query.filter_by(trainer_user_id=trainer_user_id).first()
-    #     self.assertEqual(trainer_user_from_db.lesson_current_count, lesson_current_count)
-    #     self.assertEqual(trainer_user_from_db.lesson_total_count, lesson_total_count)
-    #
-    #     self.client.delete('/trainer/trainer-user/user', json={
-    #         'trainer_user_id': trainer_user_id
-    #     })
-    #
-    #     trainer_user_from_db = TrainerUser.query.filter_by(trainer_user_id=trainer_user_id).first()
-    #     self.assertTrue(trainer_user_from_db.trainer_user_delete_flag)
+
+    def test_트레이닝_회원_모든데이터_수정(self):
+        trainer = TestDataFactory.create_trainer()
+        user = TestDataFactory.create_user()
+        trainer_user = TestDataFactory.create_trainer_user(
+            trainer=trainer,
+            user=user
+        )
+
+        body = {
+            'lesson_total_count': 3,
+            'lesson_current_count': 3,
+            'exercise_days': '월',
+            'special_notice': '변경된 노트'
+        }
+
+        headers = TestDataFactory.create_trainer_auth_header(trainer.trainer_id)
+        response = self.client.put(f'/trainer-user/trainer/{trainer.trainer_id}/users/{user.user_id}',
+                                   headers=headers, json=body)
+
+        self.assertEqual(response.status_code, http.HTTPStatus.OK)
+
+        trainer_user_from_db = TrainerUser.query.filter_by(trainer_user_id=trainer_user.trainer_user_id).first()
+        self.assertEqual(trainer_user_from_db.lesson_current_count, 3)
+        self.assertEqual(trainer_user_from_db.lesson_total_count, 3)
+
+        self.client.delete(f'/trainer-user/trainer/{trainer.trainer_id}/users/{user.user_id}', headers=headers,
+                           json={
+                               'trainer_user_id': trainer_user.trainer_user_id
+                           })
+
+        trainer_user_from_db = TrainerUser.query.filter_by(trainer_user_id=trainer_user.trainer_user_id).first()
+        self.assertTrue(trainer_user_from_db.trainer_user_delete_flag)

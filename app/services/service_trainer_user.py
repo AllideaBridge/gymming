@@ -101,7 +101,7 @@ class TrainerUserService:
         trainer_user.lesson_current_count = data.lesson_current_count
         trainer_user.exercise_days = data.exercise_days
         trainer_user.special_notes = data.special_notice
-        self.tu_repository.update()
+        self.tu_repository.update(trainer_user)
 
     def delete_trainer_user(self, trainer_id, user_id):
         trainer_user: TrainerUser = self.tu_repository.select_by_trainer_id_and_user_id(
@@ -114,4 +114,4 @@ class TrainerUserService:
 
         trainer_user.trainer_user_delete_flag = True
         trainer_user.deleted_at = datetime.utcnow()
-        self.tu_repository.update()
+        self.tu_repository.update(trainer_user)
