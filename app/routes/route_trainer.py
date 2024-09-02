@@ -1,20 +1,17 @@
 from datetime import datetime
 
-import boto3
 from flask import request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask_restx import Namespace, Resource, fields
 
-from app.common.constants import DATETIMEFORMAT, DATEFORMAT
+from app.common.constants import DATETIMEFORMAT
 from app.common.exceptions import UnAuthorizedError, BadRequestError
-from app.entities.entity_trainer import Trainer
-from app.entities.entity_users import Users
 from app.entities.entity_schedule import Schedule
 from app.entities.entity_trainer_user import TrainerUser
+from app.entities.entity_users import Users
 from app.models.model_auth import FcmAuthRequest
 from app.models.model_trainer import trainer_show_model
 from app.services.service_factory import ServiceFactory
-from app.services.service_image import ImageService
 from database import db
 
 ns_trainer = Namespace('trainers', description='Trainer API')
