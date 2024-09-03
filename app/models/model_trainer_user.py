@@ -3,7 +3,6 @@ from typing import List
 from flask_restx import fields, Model
 from pydantic import BaseModel, Field
 
-from app import TrainerUser, Trainer, Users
 from app.common.constants import const
 
 user_of_trainer = Model('UserOfTrainer', {
@@ -78,7 +77,7 @@ class UsersRelatedTrainerResponse:
     last_date: str
 
     @staticmethod
-    def to_dict(trainer_user: TrainerUser, user: Users):
+    def to_dict(trainer_user, user):
         return {
             "user_id": trainer_user.user_id,
             "user_name": user.user_name,
@@ -103,7 +102,7 @@ class TrainersRelatedUserResponse:
     center_location: str
 
     @staticmethod
-    def to_dict(trainer_user: TrainerUser, trainer: Trainer):
+    def to_dict(trainer_user, trainer):
         return {
             "trainer_id": trainer.trainer_id,
             "trainer_name": trainer.trainer_name,
@@ -132,7 +131,7 @@ class UserDetailRelatedTrainerResponse:
     last_date: str
 
     @staticmethod
-    def to_dict(user: Users, trainer_user: TrainerUser):
+    def to_dict(user, trainer_user):
         return {
             "name": user.user_name,
             "email": user.user_email,
