@@ -42,7 +42,7 @@ class UserService:
         new_user = Users(
             user_social_id=social_id
         )
-        self.user_repository.insert(new_user)
+        self.user_repository.create(new_user)
         return new_user
 
     def check_user_exists(self, user_name, user_phone_number):

@@ -13,6 +13,7 @@ class AuthService:
         self.kakao_token_verify_url = 'https://kapi.kakao.com/v1/user/access_token_info'
         self.kakao_get_user_info_url = 'https://kapi.kakao.com/v2/user/me'
         self.trainer_service = ServiceFactory.trainer_service()
+        self.user_service = ServiceFactory.user_service()
 
     def verify_kakao_token(self, token):
         headers = {'Authorization': f'Bearer {token}'}
@@ -48,9 +49,9 @@ class AuthService:
 
     def auth_gymming_kakao_user(self, token):
         social_id = self.authenticate_kakao_user(token)
-        user = UserService.get_user_by_social_id(social_id)
+        user = self.user_service.get_user_by_social_id(social_id)
         if user is None:
-            user = UserService.create_user_only_social_id(social_id)
+            user = self.user_service.create_user_only_social_id(social_id)
         return user
 
     def auth_gymming_kakao_trainer(self, token):
