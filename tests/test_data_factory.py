@@ -2,7 +2,7 @@ import uuid
 
 from flask_jwt_extended import create_access_token
 
-from app import db, Trainer, Users, TrainerUser, Schedule, ChangeTicket
+from app import db, Trainer, Users, TrainerUser, Schedule, ChangeTicket, TrainerAvailability
 from datetime import datetime, timedelta
 
 from app.entities.entity_trainer_fcm_token import TrainerFcmToken
@@ -152,6 +152,22 @@ class TestDataFactory:
         db.session.add(user_fcm_token)
         db.session.commit()
         return user_fcm_token
+
+    @staticmethod
+    def create_trainer_availability(trainer=None, **kwargs):
+        if trainer is None:
+            trainer = TestDataFactory.create_trainer()
+
+        trainer_availability = TrainerAvailability(
+            trainer_id=trainer.trainer_id,
+            week_day=kwargs.get('week_day', 1),
+            start_time=kwargs.get('start_time', datetime.now()),
+            end_time=kwargs.get('end_time', datetime.now()),
+            possible_lesson_cnt=kwargs.get('possible_lesson_cnt', 10)
+        )
+        db.session.add(trainer_availability)
+        db.session.commit()
+        return trainer_availability
 
 
 class ScheduleBuilder:

@@ -4,7 +4,7 @@ from marshmallow import ValidationError
 
 from app.common.exceptions import BadRequestError, UnAuthorizedError
 from app.models.model_trainer_user import users_of_trainer, user_detail_of_trainer, UserTrainersResponse
-from app.routes.models.model_trainer_user import CreateTrainerUserRelationRequest, UpdateTrainerUserRequest
+from app.models.model_trainer_user import CreateTrainerUserRelationRequest, UpdateTrainerUserRequest
 from app.services.service_factory import ServiceFactory
 from app.validators.response_validators import validate_response
 

@@ -13,6 +13,9 @@ class TrainerAvailabilityRepository(BaseRepository[TrainerAvailability]):
     def __init__(self, db: SQLAlchemy):
         super().__init__(TrainerAvailability, db)
 
+    def get_by_trainer_id(self, trainer_id):
+        return TrainerAvailability.query.filter_by(trainer_id=trainer_id).all()
+
     def select_week_day_by_trainer_id(self, trainer_id):
         available_week_days = self.db.session.query(
             TrainerAvailability.week_day
