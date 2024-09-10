@@ -1,9 +1,10 @@
 from typing import List
 
 from flask_restx import fields, Model
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.common.constants import const
+from app.common.exceptions import BadRequestError
 
 user_of_trainer = Model('UserOfTrainer', {
     'user_id': fields.Integer(readOnly=True, description='The user unique identifier'),
@@ -32,34 +33,80 @@ class UserTrainer(BaseModel):
     center_location: str = Field(description="center_location")
 
 
-class CreateTrainerUserRelationRequest:
-    user_name: str
-    phone_number: str
-    lesson_total_count: int
-    lesson_current_count: int
-    exercise_days: str
-    special_notice: str
+class CreateTrainerUserRelationRequest(BaseModel):
+    user_name: str = Field()
+    phone_number: str = Field()
+    lesson_total_count: int = Field()
+    lesson_current_count: int = Field()
+    exercise_days: str = Field()
+    special_notice: str = Field()
 
-    def __init__(self, data):
-        self.user_name = data['user_name']
-        self.phone_number = data['phone_number']
-        self.lesson_total_count = data['lesson_total_count']
-        self.lesson_current_count = data['lesson_current_count']
-        self.exercise_days = data['exercise_days']
-        self.special_notice = data['special_notice']
+    @field_validator('user_name')
+    @classmethod
+    def validate(cls, value: str):
+        return value
+
+    @field_validator('phone_number')
+    @classmethod
+    def validate(cls, value: str):
+        return value
+
+    @field_validator('lesson_total_count')
+    @classmethod
+    def validate(cls, value: int):
+        if value < 0:
+            raise BadRequestError()
+        return value
+
+    @field_validator('lesson_current_count')
+    @classmethod
+    def validate(cls, value: int):
+        if value < 0:
+            raise BadRequestError()
+        if value > cls.lesson_total_count:
+            raise BadRequestError()
+        return value
+
+    @field_validator('exercise_days')
+    @classmethod
+    def validate(cls, value: str):
+        return value
+
+    @field_validator('special_notice')
+    @classmethod
+    def validate(cls, value: str):
+        return value
 
 
-class UpdateTrainerUserRequest:
-    lesson_total_count: int
-    lesson_current_count: int
-    exercise_days: str
-    special_notice: str
+class UpdateTrainerUserRequest(BaseModel):
+    lesson_total_count: int | None = Field()
+    lesson_current_count: int | None = Field()
+    exercise_days: str | None = Field()
+    special_notice: str | None = Field()
 
-    def __init__(self, data):
-        self.lesson_total_count = data['lesson_total_count']
-        self.lesson_current_count = data['lesson_current_count']
-        self.exercise_days = data['exercise_days']
-        self.special_notice = data['special_notice']
+    @field_validator('lesson_total_count')
+    @classmethod
+    def validate(cls, value: int | None):
+        if value is not None and value < 0:
+            raise BadRequestError()
+        return value
+
+    @field_validator('lesson_current_count')
+    @classmethod
+    def validate(cls, value: int | None):
+        if value is not None and value < 0:
+            raise BadRequestError()
+        return value
+
+    @field_validator('exercise_days')
+    @classmethod
+    def validate(cls, value: str | None):
+        return value
+
+    @field_validator('special_notice')
+    @classmethod
+    def validate(cls, value: str | None):
+        return value
 
 
 class UserTrainersResponse(BaseModel):
