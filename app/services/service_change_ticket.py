@@ -22,10 +22,15 @@ class ChangeTicketService:
         self.user_fcm_token_repository = user_fcm_token_repository
         self.trainer_fcm_token_repository = trainer_fcm_token_repository
 
-    def get_change_ticket_by_id(self, change_ticket_id) -> ChangeTicket:
-        result = self.change_ticket_repository.get(change_ticket_id)
-        if not result:
+    def get_change_ticket_by_id(self, change_ticket_id) -> dict:
+        change_ticket: ChangeTicket = self.change_ticket_repository.get(change_ticket_id)
+        if not change_ticket:
             raise BadRequestError(message=f"존재하지 않는 Change Ticket 입니다. {change_ticket_id}")
+
+        result = change_ticket.__dict__
+
+        result['user_id'] = change_ticket.schedule.lesson.user_id
+        result['trainer_id'] = change_ticket.schedule.lesson.trainer_id
         return result
 
     def create_change_ticket(self, data: CreateChangeTicketRequest):
