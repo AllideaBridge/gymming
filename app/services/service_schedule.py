@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 from app.common.constants import DATEFORMAT, SCHEDULE_MODIFIED, SCHEDULE_CANCELLED, SCHEDULE_TYPE_MONTH, \
     SCHEDULE_TYPE_DAY, SCHEDULE_TYPE_WEEK, DATETIMEFORMAT, SCHEDULE_SCHEDULED
-from app.common.exceptions import BadRequestError, ApplicationError
+from app.common.exceptions import BadRequestError, ApplicationError, ResourceNotFound
 from app.entities.entity_schedule import Schedule
 
 
@@ -229,7 +229,7 @@ class ScheduleService:
         schedule = self.schedule_repository.select_schedule_by_schedule_id(schedule_id)
 
         if schedule is None:
-            raise BadRequestError
+            raise ResourceNotFound(message="스케쥴이 존재하지 않습니다.")
 
         lesson_change_range = schedule.lesson_change_range
 

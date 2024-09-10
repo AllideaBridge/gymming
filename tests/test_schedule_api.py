@@ -57,11 +57,15 @@ class ScheduleTestCase(BaseTestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_유저_스케쥴_변경(self):
+        lesson_change_range = 3
+        trainer = TestDataFactory.create_trainer(lesson_change_range=lesson_change_range)
+
         schedule = (ScheduleBuilder()
-                    .with_start_time(datetime(2024, 1, 22, 12))
+                    .with_trainer(trainer)
+                    .with_start_time(datetime.now() + timedelta(days=lesson_change_range, hours=3))
                     .build())
 
-        request_time = "2024-01-16 17:31:13"
+        request_time = (datetime.now() + timedelta(days=lesson_change_range, hours=8)).strftime(DATETIMEFORMAT)
         body = {
             "id": schedule.schedule_id,
             "start_time": request_time,
@@ -84,6 +88,7 @@ class ScheduleTestCase(BaseTestCase):
         }
         response = self.client.put(f'/schedules/{schedule_id}', json=body)
         self.assertEqual(response.status_code, 404)
+        print(response.get_json())
 
     def test_유저_스케쥴_취소(self):
         schedule = (ScheduleBuilder()
@@ -102,15 +107,18 @@ class ScheduleTestCase(BaseTestCase):
         self.assertEqual(schedule.schedule_status, SCHEDULE_CANCELLED)
 
     def test_유저가_이미_있는_트레이너의_스케쥴로_변경하는_경우(self):
-        trainer = TestDataFactory.create_trainer()
+        lesson_change_range = 3
+        trainer = TestDataFactory.create_trainer(lesson_change_range=lesson_change_range)
+        trainer_schedule_time = datetime.now() + timedelta(days=lesson_change_range, hours=8)
         trainer_schedule = (ScheduleBuilder()
                             .with_trainer(trainer)
-                            .with_start_time(datetime(2024, 1, 22, 12))
+                            .with_start_time(trainer_schedule_time)
                             .build())
 
+        user_schedule_time = datetime.now() + timedelta(days=lesson_change_range, hours=3)
         user_schedule = (ScheduleBuilder()
                          .with_trainer(trainer)
-                         .with_start_time(datetime(2024, 1, 22, 15))
+                         .with_start_time(user_schedule_time)
                          .build())
 
         already_exist_time = trainer_schedule.schedule_start_time

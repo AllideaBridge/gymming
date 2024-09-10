@@ -28,13 +28,6 @@ from firebase_admin import credentials
 def create_app(env):
     app = Flask(__name__)
 
-    project_root = os.path.dirname(os.path.abspath(__file__))
-
-    # Firebase 초기화
-    cred_path = os.path.join(project_root, 'gymming-firebase-adminsdk.json')
-    cred = credentials.Certificate(cred_path)
-    firebase_admin.initialize_app(cred)
-
     api = Api(app, version='1.0', title='Gymming', description='Gymming api', doc="/api-docs")
     api.add_namespace(ns_user)
     api.add_namespace(ns_trainer)
@@ -49,6 +42,12 @@ def create_app(env):
         logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
         app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:1111@localhost:3306/gymming_test'
     else:
+        # Firebase 초기화
+        project_root = os.path.dirname(os.path.abspath(__file__))
+        cred_path = os.path.join(project_root, 'gymming-firebase-adminsdk.json')
+        cred = credentials.Certificate(cred_path)
+        firebase_admin.initialize_app(cred)
+
         # Docker에서 실행 중인 MySQL 서버에 연결
         app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:1111@localhost:3306/gymming'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
