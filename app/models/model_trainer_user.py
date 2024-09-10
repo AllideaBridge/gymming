@@ -5,9 +5,6 @@ from pydantic import BaseModel, Field, field_validator
 
 from app.common.constants import const
 from app.common.exceptions import BadRequestError
-from app.entities.entity_trainer import Trainer
-from app.entities.entity_trainer_user import TrainerUser
-from app.entities.entity_users import Users
 
 user_of_trainer = Model('UserOfTrainer', {
     'user_id': fields.Integer(readOnly=True, description='The user unique identifier'),

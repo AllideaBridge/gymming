@@ -4,8 +4,8 @@ from flask_restx import Namespace, Resource
 from marshmallow import ValidationError
 
 from app.common.exceptions import BadRequestError, UnAuthorizedError
-from app.models.model_trainer_user import users_of_trainer, user_detail_of_trainer, UserTrainersResponse
 from app.models.model_trainer_user import CreateTrainerUserRelationRequest, UpdateTrainerUserRequest
+from app.models.model_trainer_user import users_of_trainer, user_detail_of_trainer, UserTrainersResponse
 from app.services.service_factory import ServiceFactory
 from app.validators.response_validators import validate_response
 
@@ -99,7 +99,6 @@ class UserTrainers(Resource):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.tu_service = ServiceFactory.trainer_user_service()
-
 
     @jwt_required()
     @validate_response(UserTrainersResponse)

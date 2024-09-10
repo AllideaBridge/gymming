@@ -3,11 +3,8 @@ from datetime import datetime
 from app.common.exceptions import BadRequestError
 from app.entities.entity_trainer_user import TrainerUser
 from app.entities.entity_users import Users
-from app.repositories.repository_trainer import TrainerRepository
-from app.repositories.repository_users import UserRepository
 from app.models.model_trainer_user import UsersRelatedTrainerResponse, CreateTrainerUserRelationRequest, \
     TrainersRelatedUserResponse, UserDetailRelatedTrainerResponse, UpdateTrainerUserRequest
-from app.services.service_image import ImageService
 
 
 class TrainerUserService:
