@@ -1,12 +1,8 @@
-# todo.txt : 스케쥴 생성 시간이 현재 시간보다 이후인지 체크
-from datetime import datetime
-from typing import Any
-from typing_extensions import Self
-
 from pydantic import BaseModel, Field, field_validator
 
-from app.common.constants import DATETIMEFORMAT
+from app.common.constants import SCHEDULE_MODIFIED
 from app.common.exceptions import BadRequestError
+from app.utils.util_time import validate_datetime
 
 
 class ScheduleCreateRequest(BaseModel):
@@ -16,8 +12,21 @@ class ScheduleCreateRequest(BaseModel):
 
     @field_validator('schedule_start_time')
     @classmethod
-    def validate(cls, v):
-        date_time = datetime.strptime(v, DATETIMEFORMAT)
-        if date_time < datetime.now():
-            raise BadRequestError('schedule_start_time must be in the future.')
-        return v
+    def validate_schedule_start_time(cls, v):
+        return validate_datetime(v)
+
+
+class ScheduleSetRequest(BaseModel):
+    start_time: str = Field(description='schedule start time')
+    status: str = Field(description='schedule status')
+
+    @field_validator('start_time')
+    @classmethod
+    def validate_schedule_start_time(cls, v):
+        return validate_datetime(v)
+
+    @field_validator('status')
+    @classmethod
+    def validate_status(cls, v):
+        if v not in [SCHEDULE_MODIFIED]:
+            raise BadRequestError(message='schedule status must be MODIFIED')

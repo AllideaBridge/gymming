@@ -36,15 +36,15 @@ class TrainerAvailabilityRepository(BaseRepository[TrainerAvailability]):
         trainer = Trainer.query.filter_by(trainer_id=trainer_id).first()
         lesson_minutes = trainer.lesson_minutes
         for availability in availabilities:
-            start_time = datetime.strptime(availability.get('start_time'), TIMEFORMAT).time()
-            end_time = datetime.strptime(availability.get('end_time'), TIMEFORMAT).time()
+            start_time = datetime.strptime(availability.start_time, TIMEFORMAT).time()
+            end_time = datetime.strptime(availability.end_time, TIMEFORMAT).time()
             possible_lesson_cnt = calculate_lesson_slots(start_time, end_time, lesson_minutes)
 
             trainer_availability = TrainerAvailability(
                 trainer_id=trainer_id,
-                week_day=availability.get('week_day'),
-                start_time=availability.get('start_time'),
-                end_time=availability.get('end_time'),
+                week_day=availability.week_day,
+                start_time=start_time,
+                end_time=end_time,
                 possible_lesson_cnt=possible_lesson_cnt
             )
             self.db.session.add(trainer_availability)

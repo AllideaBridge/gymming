@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from flask import request
+from flask_jwt_extended import jwt_required
 from flask_pydantic import validate
 from flask_restx import Namespace, Resource, fields
 from marshmallow import ValidationError
@@ -38,6 +39,8 @@ class Schedule(Resource):
     def get(self, schedule_id):
         return self.schedule_service.get_schedule_details(schedule_id)
 
+    @jwt_required()
+    @validate()
     def put(self, schedule_id):
         try:
             start_time = datetime.strptime(request.json['start_time'], DATETIMEFORMAT)

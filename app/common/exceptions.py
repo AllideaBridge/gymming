@@ -12,3 +12,8 @@ class BadRequestError(ApplicationError):
 class UnAuthorizedError(ApplicationError):
     def __init__(self, message=None):
         super().__init__("This Request is UnAuthorized" if message is None else message, 401)
+
+
+class ResourceNotFound(ApplicationError):
+    def __init__(self, message=None):
+        super().__init__("Resource Not Found" if message is None else message, 404)

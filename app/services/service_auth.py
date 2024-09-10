@@ -50,13 +50,9 @@ class AuthService:
     def auth_gymming_kakao_user(self, token):
         social_id = self.authenticate_kakao_user(token)
         user = self.user_service.get_user_by_social_id(social_id)
-        if user is None:
-            user = self.user_service.create_user_only_social_id(social_id)
         return user
 
     def auth_gymming_kakao_trainer(self, token):
         social_id = self.authenticate_kakao_user(token)
         trainer = self.trainer_service.get_trainer_by_social_id(social_id)
-        if trainer is None:
-            trainer = self.trainer_service.create_trainer_only_social_id(social_id)
         return trainer

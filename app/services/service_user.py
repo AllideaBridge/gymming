@@ -14,11 +14,11 @@ class UserService:
 
     def create_user(self, data):
         new_user = Users(
-            user_email=data['user_email'],
+            user_social_id=data['user_social_id'],
+            user_email=data.get('user_email'),
             user_name=data.get('user_name'),
             user_gender=data.get('user_gender'),
             user_phone_number=data.get('user_phone_number'),
-            user_profile_img_url=data.get('user_profile_img_url'),
             user_delete_flag=data.get('user_delete_flag', False),
         )
         self.user_repository.create(new_user)
