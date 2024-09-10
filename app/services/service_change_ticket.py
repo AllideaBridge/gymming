@@ -5,10 +5,6 @@ from app.common.constants import CHANGE_TICKET_STATUS_APPROVED, CHANGE_TICKET_ST
     CHANGE_TICKET_STATUS_WAITING, const
 from app.common.exceptions import ApplicationError, BadRequestError
 from app.entities.entity_change_ticket import ChangeTicket
-from app.entities.entity_schedule import Schedule
-from app.entities.entity_trainer import Trainer
-from app.entities.entity_trainer_user import TrainerUser
-from app.entities.entity_users import Users
 from app.models.model_change_ticket import CreateChangeTicketRequest, UpdateChangeTicketRequest
 
 

@@ -110,8 +110,10 @@ class ChangeTicketForTrainer(BaseModel):
     user_message: str = Field(),
     trainer_message: str = Field()
 
+
 class ChangeTicketListForTrainer(BaseModel):
     []
+
 
 class ChangeTicketResponse:
     change_ticket = Model('ChangeTicketList', {
