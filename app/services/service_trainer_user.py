@@ -3,11 +3,8 @@ from datetime import datetime
 from app.common.exceptions import BadRequestError
 from app.entities.entity_trainer_user import TrainerUser
 from app.entities.entity_users import Users
-from app.repositories.repository_trainer import TrainerRepository
-from app.repositories.repository_users import UserRepository
 from app.models.model_trainer_user import UsersRelatedTrainerResponse, CreateTrainerUserRelationRequest, \
     TrainersRelatedUserResponse, UserDetailRelatedTrainerResponse, UpdateTrainerUserRequest
-from app.services.service_image import ImageService
 
 
 class TrainerUserService:
@@ -101,7 +98,7 @@ class TrainerUserService:
         trainer_user.lesson_current_count = data.lesson_current_count
         trainer_user.exercise_days = data.exercise_days
         trainer_user.special_notes = data.special_notice
-        self.tu_repository.update()
+        self.tu_repository.update(trainer_user)
 
     def delete_trainer_user(self, trainer_id, user_id):
         trainer_user: TrainerUser = self.tu_repository.select_by_trainer_id_and_user_id(
@@ -114,4 +111,4 @@ class TrainerUserService:
 
         trainer_user.trainer_user_delete_flag = True
         trainer_user.deleted_at = datetime.utcnow()
-        self.tu_repository.update()
+        self.tu_repository.update(trainer_user)
