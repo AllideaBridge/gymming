@@ -116,7 +116,7 @@ class RefreshAuthResource(Resource):
             elif 'user_id' in current_user:
                 self.token_service.insert_user_token(current_user['user_id'], new_refresh_token)
 
-        response = {"access_token": new_access_token, "refresh_token": None}
+        response = {"access_token": new_access_token, "refresh_token": refresh_token}
         if new_refresh_token:
             response["refresh_token"] = new_refresh_token
 
