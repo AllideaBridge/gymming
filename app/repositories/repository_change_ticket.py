@@ -1,4 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.sql.functions import coalesce
 
 from app.common.constants import CHANGE_FROM_USER
 from app.entities.entity_change_ticket import ChangeTicket
@@ -40,7 +41,8 @@ class ChangeTicketRepository(BaseRepository[ChangeTicket]):
             ChangeTicket.request_time.label('to_be_date'),
             ChangeTicket.created_at.label('created_at'),
             ChangeTicket.status.label('change_ticket_status'),
-            ChangeTicket.description.label('trainer_message')
+            coalesce(ChangeTicket.description, '').label('user_message'),
+            coalesce(ChangeTicket.reject_reason, '').label('trainer_message')
         )
                           .join(Schedule, ChangeTicket.schedule_id == Schedule.schedule_id)
                           .join(TrainerUser, Schedule.trainer_user_id == TrainerUser.trainer_user_id)
