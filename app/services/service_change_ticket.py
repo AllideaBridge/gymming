@@ -172,7 +172,7 @@ class ChangeTicketService:
                 'to_be_date': ticket.to_be_date if ticket.change_ticket_type == CHANGE_TICKET_TYPE_MODIFY else None,
                 'created_at': ticket.created_at,
                 'change_ticket_status': ticket.change_ticket_status,
-                'user_message': None,
+                'user_message': ticket.user_message,
                 'trainer_message': ticket.trainer_message
             }
             results.append(result)
