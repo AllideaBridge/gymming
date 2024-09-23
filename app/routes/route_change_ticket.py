@@ -1,4 +1,3 @@
-from firebase_admin import messaging
 from flask import request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask_pydantic import validate
@@ -9,7 +8,6 @@ from app.common.constants import const
 from app.common.exceptions import ApplicationError, UnAuthorizedError, BadRequestError
 from app.models.model_change_ticket import ChangeTicketResponse
 from app.models.model_change_ticket import CreateChangeTicketRequest, UpdateChangeTicketRequest
-from app.services.service_change_ticket import ChangeTicketService
 from app.services.service_factory import ServiceFactory
 
 ns_change_ticket = Namespace('change-ticket', description='Change ticket related operations')
