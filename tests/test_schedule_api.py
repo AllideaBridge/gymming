@@ -58,9 +58,11 @@ class ScheduleTestCase(BaseTestCase):
 
     def test_유저_스케쥴_변경(self):
         lesson_change_range = 3
+        user = TestDataFactory.create_user()
         trainer = TestDataFactory.create_trainer(lesson_change_range=lesson_change_range)
 
         schedule = (ScheduleBuilder()
+                    .with_user(user)
                     .with_trainer(trainer)
                     .with_start_time(datetime.now() + timedelta(days=lesson_change_range, hours=3))
                     .build())
@@ -71,7 +73,8 @@ class ScheduleTestCase(BaseTestCase):
             "start_time": request_time,
             "status": SCHEDULE_MODIFIED
         }
-        response = self.client.put(f'/schedules/{schedule.schedule_id}', json=body)
+        headers = TestDataFactory.create_user_auth_header(user.user_id)
+        response = self.client.put(f'/schedules/{schedule.schedule_id}', headers=headers, json=body)
         self.assertEqual(response.status_code, 200)
 
         schedule = Schedule.query.filter_by(schedule_id=schedule.schedule_id).first()
@@ -79,6 +82,7 @@ class ScheduleTestCase(BaseTestCase):
         self.assertEqual(schedule.schedule_start_time.strftime(DATETIMEFORMAT), request_time)
 
     def test_유저_없는_스케쥴_변경(self):
+        user = TestDataFactory.create_user()
         schedule_id = 0
         request_time = datetime.now().strftime(DATETIMEFORMAT)
         body = {
@@ -86,12 +90,15 @@ class ScheduleTestCase(BaseTestCase):
             "start_time": request_time,
             "status": SCHEDULE_MODIFIED
         }
-        response = self.client.put(f'/schedules/{schedule_id}', json=body)
+        headers = TestDataFactory.create_user_auth_header(user.user_id)
+        response = self.client.put(f'/schedules/{schedule_id}', headers=headers, json=body)
         self.assertEqual(response.status_code, 404)
         print(response.get_json())
 
     def test_유저_스케쥴_취소(self):
+        user = TestDataFactory.create_user()
         schedule = (ScheduleBuilder()
+                    .with_user(user)
                     .with_start_time(datetime(2024, 1, 22, 12))
                     .build())
 
@@ -100,7 +107,8 @@ class ScheduleTestCase(BaseTestCase):
             "start_time": schedule.schedule_start_time.strftime(DATETIMEFORMAT),
             "status": SCHEDULE_CANCELLED
         }
-        response = self.client.put(f'/schedules/{schedule.schedule_id}', json=body)
+        headers = TestDataFactory.create_user_auth_header(user.user_id)
+        response = self.client.put(f'/schedules/{schedule.schedule_id}', headers=headers, json=body)
         self.assertEqual(response.status_code, 200)
 
         schedule = Schedule.query.filter_by(schedule_id=schedule.schedule_id).first()
@@ -116,7 +124,9 @@ class ScheduleTestCase(BaseTestCase):
                             .build())
 
         user_schedule_time = datetime.now() + timedelta(days=lesson_change_range, hours=3)
+        user = TestDataFactory.create_user()
         user_schedule = (ScheduleBuilder()
+                         .with_user(user)
                          .with_trainer(trainer)
                          .with_start_time(user_schedule_time)
                          .build())
@@ -131,7 +141,9 @@ class ScheduleTestCase(BaseTestCase):
                 "start_time": (already_exist_time + timedelta(minutes=td)).strftime(DATETIMEFORMAT),
                 "status": SCHEDULE_MODIFIED
             }
-            response = self.client.put(f'/schedules/{user_schedule.schedule_id}', json=body)
+            headers = TestDataFactory.create_user_auth_header(user.user_id)
+            response = self.client.put(f'/schedules/{user_schedule.schedule_id}', headers=headers, json=body)
+            print(response.get_json())
             self.assertIn('conflict', response.get_json()['message'])
 
     def test_스케쥴_변경_가능_validation(self):

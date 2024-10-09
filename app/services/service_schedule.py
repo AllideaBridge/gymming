@@ -2,7 +2,8 @@ from calendar import monthrange
 from datetime import datetime, timedelta
 
 from app.common.constants import DATEFORMAT, SCHEDULE_MODIFIED, SCHEDULE_CANCELLED, SCHEDULE_TYPE_MONTH, \
-    SCHEDULE_TYPE_DAY, SCHEDULE_TYPE_WEEK, DATETIMEFORMAT, SCHEDULE_SCHEDULED
+    SCHEDULE_TYPE_DAY, SCHEDULE_TYPE_WEEK, DATETIMEFORMAT, SCHEDULE_SCHEDULED, \
+    SCHEDULE_MODIFIED_WITHOUT_RANGE_VALIDATION
 from app.common.exceptions import BadRequestError, ApplicationError, ResourceNotFound
 from app.entities.entity_schedule import Schedule
 
@@ -59,22 +60,17 @@ class ScheduleService:
 
         return {"result": data}
 
-
     def handle_change_user_schedule(self, schedule_id, start_time, status):
         if status == SCHEDULE_MODIFIED:
             return self._change_schedule(schedule_id, start_time)
         if status == SCHEDULE_CANCELLED:
             return self._cancel_schedule(schedule_id)
+        if status == SCHEDULE_MODIFIED_WITHOUT_RANGE_VALIDATION:
+            return self._chagne_schedule_without_range_validation(schedule_id, start_time)
         raise BadRequestError
 
-    def _change_schedule(self, schedule_id, start_time):
-        # 스케쥴 변경 가능 범위인지 확인.
-        # todo : 성민이 에지케이스
-        changeable = self.validate_schedule_change(schedule_id=schedule_id).get('result')
-        if changeable is None or not changeable:
-            raise BadRequestError(
-                message=f'Schedule is not changeable.Lesson change range overflow. schedule_id : {schedule_id}')
-
+    # 변경 가능한 스케쥴 범위인지 확인하지 않고 바로 스케쥴 변경한다.
+    def _chagne_schedule_without_range_validation(self, schedule_id, start_time):
         schedule = self.schedule_repository.get(schedule_id)
         if not schedule:
             raise ApplicationError(f"Schedule not found {schedule_id}", 404)
@@ -92,6 +88,15 @@ class ScheduleService:
         schedule.schedule_start_time = start_time
         self.schedule_repository.update(schedule)
         return {'message': 'Schedule updated successfully'}, 200
+
+    def _change_schedule(self, schedule_id, start_time):
+        # 스케쥴 변경 가능 범위인지 확인.
+        changeable = self.validate_schedule_change(schedule_id=schedule_id).get('result')
+        if changeable is None or not changeable:
+            raise BadRequestError(
+                message=f'Schedule is not changeable.Lesson change range overflow. schedule_id : {schedule_id}')
+
+        return self._chagne_schedule_without_range_validation(schedule_id, start_time)
 
     def _cancel_schedule(self, schedule_id):
         schedule = self.schedule_repository.get(schedule_id)
