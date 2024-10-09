@@ -2,7 +2,7 @@ from marshmallow import ValidationError
 
 from app.common.constants import CHANGE_TICKET_STATUS_APPROVED, CHANGE_TICKET_STATUS_REJECTED, \
     CHANGE_TICKET_TYPE_MODIFY, CHANGE_TICKET_STATUS_CANCELED, DATETIMEFORMAT, SCHEDULE_MODIFIED, SCHEDULE_CANCELLED, \
-    CHANGE_TICKET_STATUS_WAITING, const
+    CHANGE_TICKET_STATUS_WAITING, const, SCHEDULE_MODIFIED_WITHOUT_RANGE_VALIDATION
 from app.common.exceptions import ApplicationError, BadRequestError
 from app.entities.entity_change_ticket import ChangeTicket
 from app.models.model_change_ticket import CreateChangeTicketRequest, UpdateChangeTicketRequest
@@ -97,7 +97,7 @@ class ChangeTicketService:
                     change_ticket_to_update.schedule_id, data.start_time, SCHEDULE_CANCELLED)
             elif change_ticket_to_update.change_type == const.CHANGE_TICKET_TYPE_MODIFY:
                 self.schedule_service.handle_change_user_schedule(
-                    change_ticket_to_update.schedule_id, data.start_time, SCHEDULE_MODIFIED)
+                    change_ticket_to_update.schedule_id, data.start_time, SCHEDULE_MODIFIED_WITHOUT_RANGE_VALIDATION)
         # 요청 취소는 유저가 하는 것.
         elif data.status == CHANGE_TICKET_STATUS_CANCELED:
             self.schedule_service.handle_change_user_schedule(
