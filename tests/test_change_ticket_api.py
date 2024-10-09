@@ -23,7 +23,8 @@ class TestChangeTicketApi(BaseTestCase):
 
         result = response.get_json()
         self.assertEqual(1, result['id'])
-
+        self.assertIsNotNone(result['user_id'])
+        self.assertIsNotNone(result['trainer_id'])
 
     @patch('app.services.service_fcm.FcmService.send_message')
     def test_유저_변경_티켓_생성(self, mock_send_message):

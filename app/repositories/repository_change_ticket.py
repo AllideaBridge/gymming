@@ -1,7 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql.functions import coalesce
 
-from app.common.constants import CHANGE_FROM_USER
+from app.common.constants import CHANGE_FROM_USER, const
 from app.entities.entity_change_ticket import ChangeTicket
 from app.entities.entity_schedule import Schedule
 from app.entities.entity_users import Users
@@ -28,8 +28,13 @@ class ChangeTicketRepository(BaseRepository[ChangeTicket]):
                           .join(Schedule, ChangeTicket.schedule_id == Schedule.schedule_id)
                           .join(TrainerUser, Schedule.trainer_user_id == TrainerUser.trainer_user_id)
                           .join(Users, TrainerUser.user_id == Users.user_id)
-                          .filter(TrainerUser.trainer_id == trainer_id, ChangeTicket.status == status)
-                          .paginate(page=page, per_page=per_page))
+                          .filter(TrainerUser.trainer_id == trainer_id))
+
+        if status == const.CHANGE_TICKET_STATUS_RESOLVED:
+            change_tickets = change_tickets.filter(ChangeTicket.status != const.CHANGE_TICKET_STATUS_WAITING)
+        else:
+            change_tickets = change_tickets.filter(ChangeTicket.status == status)
+        change_tickets = change_tickets.paginate(page=page, per_page=per_page)
         return change_tickets
 
     def select_change_tickets_by_user_id(self, user_id, status, page=1, per_page=10):
@@ -47,8 +52,13 @@ class ChangeTicketRepository(BaseRepository[ChangeTicket]):
                           .join(Schedule, ChangeTicket.schedule_id == Schedule.schedule_id)
                           .join(TrainerUser, Schedule.trainer_user_id == TrainerUser.trainer_user_id)
                           .join(Trainer, TrainerUser.trainer_id == Trainer.trainer_id)
-                          .filter(TrainerUser.user_id == user_id, ChangeTicket.status == status)
-                          .paginate(page=page, per_page=per_page))
+                          .filter(TrainerUser.user_id == user_id))
+
+        if status == const.CHANGE_TICKET_STATUS_RESOLVED:
+            change_tickets = change_tickets.filter(ChangeTicket.status != const.CHANGE_TICKET_STATUS_WAITING)
+        else:
+            change_tickets = change_tickets.filter(ChangeTicket.status == status)
+        change_tickets = change_tickets.paginate(page=page, per_page=per_page)
         return change_tickets
 
     # 유저가 보낸 요청 조회

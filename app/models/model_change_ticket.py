@@ -110,8 +110,10 @@ class ChangeTicketForTrainer(BaseModel):
     user_message: str = Field(),
     trainer_message: str = Field()
 
+
 class ChangeTicketListForTrainer(BaseModel):
     []
+
 
 class ChangeTicketResponse:
     change_ticket = Model('ChangeTicketList', {
@@ -123,7 +125,9 @@ class ChangeTicketResponse:
         'reject_reason': fields.String(),
         'request_time': fields.String(),
         'schedule_id': fields.String(),
-        'status': fields.String()
+        'status': fields.String(),
+        'user_id': fields.Integer(),
+        'trainer_id': fields.Integer()
     })
 
     trainer_receive_change_ticket_list = Model('TrainerReceiveChangeTicket', {
