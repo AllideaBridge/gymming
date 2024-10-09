@@ -69,6 +69,7 @@ class ScheduleService:
 
     def _change_schedule(self, schedule_id, start_time):
         # 스케쥴 변경 가능 범위인지 확인.
+        # todo : 성민이 에지케이스
         changeable = self.validate_schedule_change(schedule_id=schedule_id).get('result')
         if changeable is None or not changeable:
             raise BadRequestError(

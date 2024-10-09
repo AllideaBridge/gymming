@@ -92,6 +92,7 @@ class UserCheck(Resource):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.user_service = ServiceFactory.user_service()
+        self.image_service = ServiceFactory.image_service()
 
     # 해당 api는 트레이너가 요청하는 api.
     @jwt_required()
@@ -102,8 +103,14 @@ class UserCheck(Resource):
         if not user_name or not user_phone_number:
             raise BadRequestError("Both user_name and user_phone_number are required")
 
-        result = self.user_service.check_user_exists(user_name, user_phone_number)
-        return result
+        user = self.user_service.check_user_exists(user_name, user_phone_number)
+
+        if user:
+            user_id = user['id']
+            user['user_profile_img_url'] = self.image_service.get_presigned_url(f'user/{user_id}/profile')
+            return user;
+
+        return None
 
 
 @ns_user.route('/<int:user_id>/fcm')

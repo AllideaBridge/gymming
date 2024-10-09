@@ -49,9 +49,18 @@ class UserService:
         user = self.user_repository.select_by_username_and_phone_number(user_name, user_phone_number)
 
         if user:
-            return {"user_id": user.user_id}
-        else:
-            return {"user_id": None}
+            return {
+                "id": user.user_id,
+                "email": user.user_email,
+                "name": user.user_name,
+                "gender": user.user_gender,
+                "phone_number": user.user_phone_number,
+                "user_profile_img_url": None,
+                "delete_flag": user.user_delete_flag,
+                "birthday": user.user_birthday
+            }
+
+        return None;
 
     def create_user_fcm_token(self, user_id, body):
         old_token = self.user_fcm_repository.get_by_user_id(user_id=user_id)

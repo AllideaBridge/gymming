@@ -38,44 +38,45 @@ class CreateTrainerUserRelationRequest(BaseModel):
     phone_number: str = Field()
     lesson_total_count: int = Field()
     lesson_current_count: int = Field()
-    exercise_days: str = Field()
-    special_notice: str = Field()
+    exercise_days: str | None = Field(default=None)
+    special_notice: str | None = Field(default=None)
 
-    @field_validator('user_name')
-    @classmethod
-    def validate(cls, value: str):
-        return value
+    # @field_validator('user_name')
+    # @classmethod
+    # def validate(cls, value: str):
+    #     return value
 
-    @field_validator('phone_number')
-    @classmethod
-    def validate(cls, value: str):
-        return value
+    # @field_validator('phone_number')
+    # @classmethod
+    # def validate(cls, value: str):
+    #     return value
 
-    @field_validator('lesson_total_count')
-    @classmethod
-    def validate(cls, value: int):
-        if value < 0:
-            raise BadRequestError()
-        return value
+    # @field_validator('lesson_total_count')
+    # @classmethod
+    # def validate_lesson_total_count(cls, value: int):
+    #     if value < 0:
+    #         raise BadRequestError()
+    #     return value
 
-    @field_validator('lesson_current_count')
-    @classmethod
-    def validate(cls, value: int):
-        if value < 0:
-            raise BadRequestError()
-        if value > cls.lesson_total_count:
-            raise BadRequestError()
-        return value
+    # @field_validator('lesson_current_count')
+    # @classmethod
+    # def validate_lesson_current_count(cls, value, values):
+    #     if value < 0:
+    #         raise BadRequestError("Current lesson count cannot be negative.")
+    #     total_count = values.get('lesson_total_count')
+    #     if total_count is not None and value > total_count:
+    #         raise BadRequestError("Current lesson count cannot exceed total lesson count.")
+    #     return value
 
-    @field_validator('exercise_days')
-    @classmethod
-    def validate(cls, value: str):
-        return value
-
-    @field_validator('special_notice')
-    @classmethod
-    def validate(cls, value: str):
-        return value
+    # @field_validator('exercise_days')
+    # @classmethod
+    # def validate_exercise_days(cls, value: str):
+    #     return value
+    #
+    # @field_validator('special_notice')
+    # @classmethod
+    # def validate_special_notice(cls, value: str):
+    #     return value
 
 
 class UpdateTrainerUserRequest(BaseModel):

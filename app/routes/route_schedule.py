@@ -1,13 +1,13 @@
 from datetime import datetime
 
 from flask import request
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask_pydantic import validate
 from flask_restx import Namespace, Resource, fields
 from marshmallow import ValidationError
 
 from app.common.constants import DATETIMEFORMAT, DATEFORMAT
-from app.common.exceptions import ApplicationError
+from app.common.exceptions import ApplicationError, UnAuthorizedError
 from app.models.model_schedule import ScheduleCreateRequest
 from app.services.service_factory import ServiceFactory
 
@@ -85,7 +85,13 @@ class TrainerSchedule(Resource):
         super().__init__(*args, **kwargs)
         self.schedule_service = ServiceFactory.schedule_service()
 
+    @jwt_required()
     def get(self, trainer_id):
+        current_user = get_jwt_identity()
+
+        if trainer_id != current_user['trainer_id']:
+            raise UnAuthorizedError(message="유효하지 않는 id입니다.")
+
         date_str = request.args.get('date')
         schedule_date = datetime.strptime(date_str, DATEFORMAT).date()
         schedule_type = request.args.get('type').upper()
