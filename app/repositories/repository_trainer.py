@@ -1,4 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import and_
 
 from app.repositories.repository_base import BaseRepository
 from app.entities.entity_trainer import Trainer
@@ -14,8 +15,8 @@ class TrainerRepository(BaseRepository[Trainer]):
             Trainer.lesson_minutes,
             TrainerAvailability.start_time,
             TrainerAvailability.end_time
-        ).join(TrainerAvailability, TrainerAvailability.trainer_id == Trainer.trainer_id
-               & (TrainerAvailability.week_day == date.weekday())
+        ).join(TrainerAvailability, and_(TrainerAvailability.trainer_id == Trainer.trainer_id
+               , (TrainerAvailability.week_day == date.weekday()))
                ).filter(Trainer.trainer_id == trainer_id, Trainer.trainer_delete_flag == False).first()
 
     def select_trainer_by_social_id(self, trainer_social_id):

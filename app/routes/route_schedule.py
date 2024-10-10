@@ -89,8 +89,8 @@ class TrainerSchedule(Resource):
     def get(self, trainer_id):
         current_user = get_jwt_identity()
 
-        if trainer_id != current_user['trainer_id']:
-            raise UnAuthorizedError(message="유효하지 않는 id입니다.")
+        if 'trainer_id' not in current_user and 'user_id' not in current_user:
+            raise UnAuthorizedError(message="유효하지 않은 토큰입니다.")
 
         date_str = request.args.get('date')
         schedule_date = datetime.strptime(date_str, DATEFORMAT).date()
