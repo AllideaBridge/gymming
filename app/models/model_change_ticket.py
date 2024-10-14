@@ -58,7 +58,7 @@ class UpdateChangeTicketRequest(BaseModel):
     status: str = Field()
     change_reason: str = Field()
     reject_reason: str = Field()
-    start_time: str = Field()
+    start_time: str | None = Field(default=None)
 
     @field_validator('change_from')
     @classmethod
