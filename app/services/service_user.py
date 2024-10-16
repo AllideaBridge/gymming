@@ -20,6 +20,7 @@ class UserService:
             user_gender=data.get('user_gender'),
             user_phone_number=data.get('user_phone_number'),
             user_delete_flag=data.get('user_delete_flag', False),
+            user_birthday=data.get('user_birthday')
         )
         self.user_repository.create(new_user)
         return new_user

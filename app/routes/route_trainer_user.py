@@ -31,7 +31,6 @@ class TrainerUsers(Resource):
             parser.add_argument('trainer_user_delete_flag', type=str, help='TrainerUser Delete flag')
             args = parser.parse_args()
             delete_flag = True if args.get('trainer_user_delete_flag') == 'True' else False
-
             results = self.tu_service.get_users_related_trainer(trainer_id, delete_flag)
             return {"results": results}, 200
         except BadRequestError or ValidationError as e:
