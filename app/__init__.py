@@ -2,6 +2,7 @@ import logging
 import os
 
 import firebase_admin
+from dotenv import load_dotenv
 from flask import Flask
 from flask_jwt_extended import JWTManager
 from flask_restx import Api
@@ -24,6 +25,8 @@ from app.entities.entity_users import Users
 from app.entities.entity_trainer_availability import TrainerAvailability
 from firebase_admin import credentials
 
+load_dotenv()
+
 
 def create_app(env):
     app = Flask(__name__)
@@ -40,7 +43,7 @@ def create_app(env):
     if env == "test":
         logging.basicConfig()
         logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
-        app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:1111@localhost:3306/gymming_test'
+        app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:1111@0.0.0.0:3306/gymming_test'
     else:
         # Firebase 초기화
         project_root = os.path.dirname(os.path.abspath(__file__))
@@ -49,7 +52,7 @@ def create_app(env):
         firebase_admin.initialize_app(cred)
 
         # Docker에서 실행 중인 MySQL 서버에 연결
-        app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:1111@localhost:3306/gymming'
+        app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     # db 인스턴스 초기화
