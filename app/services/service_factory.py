@@ -46,7 +46,8 @@ class ServiceFactory:
             trainer_repository=TrainerRepository(db=db),
             trainer_availability_repository=TrainerAvailabilityRepository(db=db),
             trainer_fcm_repository=TrainerFcmTokenRepository(db=db),
-            image_service=ServiceFactory.image_service()
+            image_service=ServiceFactory.image_service(),
+            trainer_user_repository=TrainerUserRepository(db=db)
         )
 
     @staticmethod

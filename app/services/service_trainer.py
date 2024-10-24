@@ -1,15 +1,17 @@
 from app.entities.entity_trainer import Trainer
-from app.entities.entity_trainer_availability import TrainerAvailability
+from app.entities.entity_trainer_user import TrainerUser
 from app.common.exceptions import BadRequestError
 from app.entities.entity_trainer_fcm_token import TrainerFcmToken
 
 
 class TrainerService:
-    def __init__(self, trainer_repository, trainer_availability_repository, trainer_fcm_repository, image_service):
+    def __init__(self, trainer_repository, trainer_availability_repository, trainer_fcm_repository, image_service,
+                 trainer_user_repository):
         self.trainer_repository = trainer_repository
         self.trainer_availability_repository = trainer_availability_repository
         self.trainer_fcm_repository = trainer_fcm_repository
         self.image_service = image_service
+        self.trainer_user_repository = trainer_user_repository
 
     def get_trainer_by_id(self, trainer_id):
         trainer: Trainer = self.trainer_repository.get(trainer_id)
@@ -48,6 +50,10 @@ class TrainerService:
         )
 
         trainer = self.trainer_repository.create(trainer)
+        self.trainer_user_repository.create(TrainerUser(
+            trainer_id=trainer.trainer_id,
+            user_id=1
+        ))
         trainer_availabilities = data.get('trainer_availability', [])
         self.trainer_availability_repository.insert_availabilities(trainer.trainer_id, trainer_availabilities)
 
