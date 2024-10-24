@@ -12,8 +12,9 @@ class TrainerUserRepository(BaseRepository[TrainerUser]):
         super().__init__(TrainerUser, db)
 
     def select_with_users_by_trainer_id(self, trainer_id: int, delete_flag: bool):
+        from sqlalchemy import and_
         return (self.db.session.query(TrainerUser, Users)
-                .join(Users, TrainerUser.user_id == Users.user_id)
+                .join(Users, and_(TrainerUser.user_id == Users.user_id, Users.user_id != 1))
                 .filter(TrainerUser.trainer_id == trainer_id, TrainerUser.trainer_user_delete_flag == delete_flag)
                 .all())
 
