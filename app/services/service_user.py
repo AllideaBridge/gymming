@@ -1,3 +1,6 @@
+from datetime import datetime
+
+from app.common.constants import DATEFORMAT
 from app.entities.entity_user_fcm_token import UserFcmToken
 from app.entities.entity_users import Users
 
@@ -58,7 +61,7 @@ class UserService:
                 "phone_number": user.user_phone_number,
                 "user_profile_img_url": None,
                 "delete_flag": user.user_delete_flag,
-                "birthday": user.user_birthday
+                "birthday": user.user_birthday.strftime(DATEFORMAT)
             }
 
         return None;
